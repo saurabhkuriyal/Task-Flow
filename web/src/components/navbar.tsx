@@ -16,7 +16,7 @@ import {
   Home as HomeIcon,
   Layers
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -188,20 +188,22 @@ export function Navbar() {
           >
             Sign In
           </Link>
-          <Button
-            variant="ghost"
-            size="icon-sm"
+          <button
+            type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-expanded={mobileMenuOpen}
             aria-label="Toggle Navigation Menu"
-            className="rounded-lg border border-border/60 hover:bg-muted/80 text-foreground"
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "icon-sm" }),
+              "rounded-lg border border-border/60 hover:bg-muted/80 text-foreground cursor-pointer"
+            )}
           >
             {mobileMenuOpen ? (
               <X className="h-4 w-4" />
             ) : (
               <Menu className="h-4 w-4" />
             )}
-          </Button>
+          </button>
         </div>
       </div>
 

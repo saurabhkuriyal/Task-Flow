@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import type { SignupPayload, SignupResponse } from "@/types/auth";
+import connectDB from "@/utils/db";
+import UserModel from "@/models/auth.model";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
+    await connectDB();
+
     const body: SignupPayload = await req.json();
     const { name, email, phoneNumber, password } = body;
 
@@ -26,25 +31,60 @@ export async function POST(req: Request) {
       );
     }
 
-    // Mock successful user registration
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "An account with this email already exists.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Save user to database
+    const newUser = await UserModel.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      phoneNumber: phoneNumber.trim(),
+      password: hashedPassword,
+      role: "MEMBER",
+    });
+
     const response: SignupResponse = {
       success: true,
       message: "Account created successfully! Welcome to TaskFlow.",
-      token: `token-mock-${Date.now()}`,
+      token: `token-${newUser._id.toString()}-${Date.now()}`,
       user: {
-        id: `usr-${Date.now()}`,
-        name,
-        email,
-        phoneNumber,
-        role: "MEMBER",
+        id: newUser._id.toString(),
+        name: newUser.name,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
       },
     };
 
+    console.log("Signup successful:", response.user?.email);
+
     return NextResponse.json(response, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Signup error:", error);
     return NextResponse.json(
-      { success: false, message: "Invalid request payload." },
-      { status: 400 }
+      {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred during signup.",
+      },
+      { status: 500 }
     );
   }
 }

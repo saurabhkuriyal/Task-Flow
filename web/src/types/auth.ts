@@ -21,8 +21,21 @@ export interface SignupResponse {
   user?: User;
 }
 
+export interface SigninPayload {
+  email: string;
+  password: string;
+}
+
+export interface SigninResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  user?: User;
+}
+
 export interface AuthErrorResponse {
   success: false;
   message: string;
   errors?: Record<string, string[]>;
 }
+

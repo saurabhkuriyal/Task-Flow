@@ -1,38 +1,78 @@
 import { NextResponse } from "next/server";
-import { LoginCredentials, AuthResponse } from "@/models";
+import connectDB from "@/utils/db";
+import UserModel from "@/models/auth.model";
+import bcrypt from "bcryptjs";
+import type { SigninResponse } from "@/types/auth";
 
 export async function POST(req: Request) {
   try {
-    const body: LoginCredentials = await req.json();
-    const { username, password } = body;
+    await connectDB();
 
-    // Verify username "vijay" and password "12345678"
-    if (username === "vijay" && password === "12345678") {
-      const response: AuthResponse = {
-        success: true,
-        message: "Authentication successful",
-        token: "token-mock-vijay-12345",
-        user: {
-          id: "usr-vijay-1",
-          username: "vijay",
-          name: "Vijay Kumar",
-          role: "ADMIN",
+    const body = await req.json();
+    const email = (body.email || body.username || "").toLowerCase().trim();
+    const password = body.password;
+
+    if (!email || !password) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Email and password are required.",
         },
-      };
-      return NextResponse.json(response, { status: 200 });
+        { status: 400 }
+      );
     }
 
+    // Find user by email
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid email or password.",
+        },
+        { status: 401 }
+      );
+    }
+
+    // Compare hashed password
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatch) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid email or password.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const response: SigninResponse = {
+      success: true,
+      message: "Signed in successfully! Welcome back.",
+      token: `token-${user._id.toString()}-${Date.now()}`,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+      },
+    };
+
+    return NextResponse.json(response, { status: 200 });
+  } catch (error) {
+    console.error("Signin API error:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Invalid credentials. Use username: vijay and password: 12345678",
+        message:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred during signin.",
       },
-      { status: 401 }
-    );
-  } catch {
-    return NextResponse.json(
-      { success: false, message: "Invalid request payload" },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }
