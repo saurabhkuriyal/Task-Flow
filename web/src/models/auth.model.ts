@@ -5,7 +5,12 @@ export interface IUser extends Document {
   email: string;
   phoneNumber: string;
   password: string;
-  role: "ADMIN" | "OWNER" | "HOD" | "MEMBER";
+  createdOrganisationName: string
+  createdOrganisationId: string
+  organisations: [],
+  departments: [],
+  chiefOf: [],
+  managerOf: [],
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,11 +39,51 @@ const UserSchema = new Schema<IUser>(
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
     },
-    role: {
+    createdOrganisationName: {
       type: String,
-      enum: ["ADMIN", "OWNER", "HOD", "MEMBER"],
-      default: "MEMBER",
     },
+    createdOrganisationId: {
+      type: String,
+    },
+    organisations: [{
+      organisationId: {
+        type: String,
+      },
+      organisationName: {
+        type: String,
+      },
+    }],
+    departments: [{
+      departmentId: {
+        type: String,
+      },
+      departmentName: {
+        type: String,
+      },
+    }],
+    chiefOf: [{
+      organisationId: {
+        type: String,
+      },
+      organisationName: {
+        type: String,
+      },
+
+    }],
+    managerOf: [{
+      organisationId: {
+        type: String,
+      },
+      organisationName: {
+        type: String,
+      },
+      departmentId: {
+        type: String,
+      },
+      departmentName: {
+        type: String,
+      },
+    }],
   },
   {
     timestamps: true,

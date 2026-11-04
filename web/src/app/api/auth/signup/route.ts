@@ -55,7 +55,6 @@ export async function POST(req: Request) {
       email: normalizedEmail,
       phoneNumber: phoneNumber.trim(),
       password: hashedPassword,
-      role: "MEMBER",
     });
 
     const response: SignupResponse = {
@@ -67,7 +66,6 @@ export async function POST(req: Request) {
         name: newUser.name,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
-        role: newUser.role,
       },
     };
 
