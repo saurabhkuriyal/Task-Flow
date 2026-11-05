@@ -84,7 +84,9 @@ export function Navbar() {
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-200 select-none",
-        isScrolled
+        mobileMenuOpen
+          ? "border-b border-border/80 bg-white dark:bg-zinc-950 shadow-xs"
+          : isScrolled
           ? "border-b border-border/60 bg-background/80 backdrop-blur-md shadow-xs"
           : "border-b border-transparent bg-background/50 backdrop-blur-xs"
       )}
@@ -209,7 +211,7 @@ export function Navbar() {
 
       {/* Mobile Drawer / Overlay Navigation */}
       {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-16 bottom-0 z-40 bg-background/95 backdrop-blur-xl sm:hidden border-b border-border/80 flex flex-col justify-between p-5 animate-in fade-in-20 slide-in-from-top-2 duration-150">
+        <div className="fixed inset-x-0 top-16 bottom-0 z-40 bg-white dark:bg-zinc-950 sm:hidden border-b border-border/80 flex flex-col justify-between p-5 animate-in fade-in-20 slide-in-from-top-2 duration-150 overflow-y-auto">
           <div className="flex flex-col gap-1.5">
             <div className="px-2 pb-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               Navigation

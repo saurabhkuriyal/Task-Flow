@@ -29,7 +29,6 @@ export interface SigninPayload {
 export interface SigninResponse {
   success: boolean;
   message: string;
-  organizationId: string;
   token?: string;
   user?: User;
 }

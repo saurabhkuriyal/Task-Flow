@@ -1,9 +1,10 @@
-import React from "react";
+import { WorkspaceView } from "@/components/workspace";
+
+export const metadata = {
+  title: "Workspaces & Organizations | TaskFlow",
+  description: "Create and manage your enterprise organizations and team workspaces.",
+};
 
 export default function WorkspacesPage() {
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold">Workspaces</h1>
-    </div>
-  );
+  return <WorkspaceView />;
 }
