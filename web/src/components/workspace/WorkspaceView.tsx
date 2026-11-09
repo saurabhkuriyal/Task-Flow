@@ -4,7 +4,6 @@ import * as React from "react";
 import { useWorkspaces } from "@/hooks/workspace";
 import { WorkspaceHero } from "./WorkspaceHero";
 import { OrganizationList } from "./OrganizationList";
-import { CreateOrganizationModal } from "./CreateOrganizationModal";
 
 export function WorkspaceView() {
   const {
@@ -13,9 +12,6 @@ export function WorkspaceView() {
     setSearchQuery,
     filterRole,
     setFilterRole,
-    isCreateModalOpen,
-    setIsCreateModalOpen,
-    handleCreateOrganization,
     toggleFavorite,
     stats,
   } = useWorkspaces();
@@ -24,7 +20,6 @@ export function WorkspaceView() {
     <div className="min-h-full w-full py-4 sm:py-8 px-3.5 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-10">
       {/* Hero Section with Create Organization Button & Key Highlights */}
       <WorkspaceHero
-        onCreateClick={() => setIsCreateModalOpen(true)}
         totalOrgs={stats.totalOrgs}
         totalMembers={stats.totalMembers}
         totalTasks={stats.totalTasks}
@@ -48,16 +43,8 @@ export function WorkspaceView() {
           filterRole={filterRole}
           onFilterChange={setFilterRole}
           onToggleFavorite={toggleFavorite}
-          onCreateClick={() => setIsCreateModalOpen(true)}
         />
       </div>
-
-      {/* Create Organization Modal */}
-      <CreateOrganizationModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateOrganization}
-      />
     </div>
   );
 }

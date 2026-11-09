@@ -175,7 +175,7 @@ export function HeroSection() {
                 "w-full sm:w-auto h-12 px-7 text-sm font-semibold shadow-md transition-all duration-200 group gap-2"
               )}
             >
-              <span>Get Started — It's Free</span>
+              <span>Get Started — It&apos;s Free</span>
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
 

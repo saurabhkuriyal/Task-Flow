@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       email: user.email
     })
 
-    console.log("tokenn is", token);
+    // console.log("tokenn is", token);
 
 
     const signInResponse: SigninResponse = {

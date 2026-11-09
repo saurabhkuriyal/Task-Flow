@@ -3,7 +3,6 @@
 import * as React from "react";
 import type {
   WorkspaceOrganization,
-  CreateOrganizationInput,
   OrganizationRole,
 } from "@/types/workspace";
 
@@ -72,7 +71,6 @@ export function useWorkspaces() {
   const [organizations, setOrganizations] = React.useState<WorkspaceOrganization[]>(INITIAL_ORGANIZATIONS);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterRole, setFilterRole] = React.useState<"ALL" | OrganizationRole>("ALL");
-  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
   // Filter organizations by search text and selected role
   const filteredOrganizations = React.useMemo(() => {
@@ -98,36 +96,6 @@ export function useWorkspaces() {
     };
   }, [organizations]);
 
-  // Create organization handler
-  const handleCreateOrganization = (data: CreateOrganizationInput) => {
-    const slug = data.slug?.trim() || data.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    const initials = data.name
-      .split(" ")
-      .map((w) => w[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "OR";
-
-    const newOrg: WorkspaceOrganization = {
-      id: `org-${Date.now()}`,
-      name: data.name,
-      slug,
-      description: data.description || "Workspace organization for collaborative tasks and team sprints.",
-      role: "OWNER",
-      plan: data.plan || "Pro",
-      membersCount: 1,
-      projectsCount: 1,
-      activeTasksCount: 0,
-      gradient: data.gradient || "from-blue-600 to-violet-600",
-      avatarText: initials,
-      updatedAt: "Just created",
-      isFavorite: false,
-    };
-
-    setOrganizations((prev) => [newOrg, ...prev]);
-    setIsCreateModalOpen(false);
-  };
-
   const toggleFavorite = (id: string) => {
     setOrganizations((prev) =>
       prev.map((org) =>
@@ -143,13 +111,9 @@ export function useWorkspaces() {
     setSearchQuery,
     filterRole,
     setFilterRole,
-    isCreateModalOpen,
-    setIsCreateModalOpen,
-    handleCreateOrganization,
     toggleFavorite,
     stats,
   };
 }
 
 export default useWorkspaces;
-

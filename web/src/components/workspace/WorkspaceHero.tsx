@@ -1,12 +1,15 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Plus, Building2, Users, Layers, Sparkles, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ROUTES } from "@/constants/routes";
+import { cn } from "@/lib/utils";
 
 interface WorkspaceHeroProps {
-  onCreateClick: () => void;
+  onCreateClick?: () => void;
   totalOrgs: number;
   totalMembers: number;
   totalTasks: number;
@@ -55,14 +58,17 @@ export function WorkspaceHero({
 
           {/* Action buttons responsive: full-width stack on mobile, inline on tablet+ */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 pt-2">
-            <Button
-              size="lg"
+            <Link
+              href={ROUTES.ORGANIZATIONS_CREATE}
               onClick={onCreateClick}
-              className="w-full sm:w-auto h-11 sm:h-10 gap-2 font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer justify-center text-sm"
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "w-full sm:w-auto h-11 sm:h-10 gap-2 font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer justify-center text-sm"
+              )}
             >
               <Plus className="h-4 w-4 stroke-[2.5]" />
               <span>Create Organization</span>
-            </Button>
+            </Link>
 
             <a
               href="#org-list"

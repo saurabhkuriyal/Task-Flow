@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Search, Building2, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { OrganizationCard } from "./OrganizationCard";
 import type { WorkspaceOrganization, OrganizationRole } from "@/types/workspace";
+import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 
 interface OrganizationListProps {
@@ -15,7 +17,7 @@ interface OrganizationListProps {
   filterRole: "ALL" | OrganizationRole;
   onFilterChange: (role: "ALL" | OrganizationRole) => void;
   onToggleFavorite: (id: string) => void;
-  onCreateClick: () => void;
+  onCreateClick?: () => void;
 }
 
 export function OrganizationList({
@@ -117,14 +119,17 @@ export function OrganizationList({
                 Clear Search
               </Button>
             )}
-            <Button
-              size="sm"
+            <Link
+              href={ROUTES.ORGANIZATIONS_CREATE}
               onClick={onCreateClick}
-              className="w-full sm:w-auto gap-1.5 cursor-pointer text-xs"
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "w-full sm:w-auto gap-1.5 cursor-pointer text-xs justify-center"
+              )}
             >
               <Plus className="h-4 w-4" />
               <span>Create Organization</span>
-            </Button>
+            </Link>
           </div>
         </div>
       )}

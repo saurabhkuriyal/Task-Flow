@@ -9,14 +9,13 @@ import {
   AlertCircle, 
   Loader2, 
   ArrowRight,
-  ShieldCheck,
   CheckCheck
 } from "lucide-react";
 import { useSignup } from "@/hooks/auth/useSignup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 
 export function SignupForm() {
@@ -262,7 +261,7 @@ export function SignupForm() {
 
             {/* Terms and Privacy notice */}
             <p className="mt-4 text-center text-[11px] text-muted-foreground leading-normal">
-              By creating an account, you agree to TaskFlow's{" "}
+              By creating an account, you agree to TaskFlow&apos;s{" "}
               <Link href="#" className="underline hover:text-foreground">
                 Terms of Service
               </Link>{" "}

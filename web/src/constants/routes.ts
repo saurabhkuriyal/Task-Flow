@@ -7,4 +7,5 @@ export const ROUTES = {
   DASHBOARD: "/workspaces",
   WORKSPACES: "/workspaces",
   ORGANIZATIONS: "/organizations",
+  ORGANIZATIONS_CREATE: "/organizations/createOrganization",
 } as const;
