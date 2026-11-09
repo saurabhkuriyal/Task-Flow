@@ -40,12 +40,7 @@ export function useSignin() {
 
       if (response.success) {
         setIsSuccess(true);
-        if (response.token && typeof window !== "undefined") {
-          localStorage.setItem("token", response.token);
-          if (response.user) {
-            localStorage.setItem("user", JSON.stringify(response.user));
-          }
-        }
+
         setTimeout(() => {
           router.push(ROUTES.DASHBOARD);
         }, 800);

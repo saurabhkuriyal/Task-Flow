@@ -3,6 +3,8 @@ import connectDB from "@/utils/db";
 import UserModel from "@/models/auth.model";
 import bcrypt from "bcryptjs";
 import type { SigninResponse } from "@/types/auth";
+import { signInToken } from "@/lib/auth";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
@@ -47,11 +49,18 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
+    const token: string = await signInToken({
+      id: user._id,
+      name: user.name,
+      email: user.email
+    })
 
-    const response: SigninResponse = {
+    console.log("tokenn is", token);
+
+
+    const signInResponse: SigninResponse = {
       success: true,
       message: "Signed in successfully! Welcome back.",
-      token: `token-${user._id.toString()}-${Date.now()}`,
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -60,7 +69,16 @@ export async function POST(req: Request) {
       },
     };
 
-    return NextResponse.json(response, { status: 200 });
+    const response = NextResponse.json(signInResponse, { status: 200 });
+
+    response.cookies.set('token', token, {
+      httpOnly: true, // Prevents client-side JS from reading the cookies
+      sameSite: 'lax', // Protects against CSRF
+      path: '/', // Accessible across the entire app
+      maxAge: 60 * 60 * 24, // 1 day in seconds
+    });
+
+    return response
   } catch (error) {
     console.error("Signin API error:", error);
     return NextResponse.json(
