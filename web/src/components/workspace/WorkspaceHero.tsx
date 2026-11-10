@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Building2, Users, Layers, Sparkles, ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/context/UserContext";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,8 @@ export function WorkspaceHero({
   totalMembers,
   totalTasks,
 }: WorkspaceHeroProps) {
+  const { userName } = useUser();
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-b from-card/90 to-card/50 p-4 sm:p-6 lg:p-10 shadow-lg backdrop-blur-sm">
       {/* Ambient background light spheres */}
@@ -36,22 +39,34 @@ export function WorkspaceHero({
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 sm:gap-8">
         {/* Left Column: Heading & Call to Action */}
         <div className="w-full max-w-2xl space-y-3 sm:space-y-4">
-          <Badge
-            variant="outline"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] sm:text-xs font-medium border-primary/30 bg-primary/5 text-primary"
-          >
-            <Sparkles className="h-3.5 w-3.5 shrink-0" />
-            <span>Multi-Tenant Workspaces</span>
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold border-primary/30 bg-primary/10 text-primary shadow-xs"
+            >
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              <span>Workspace Hub</span>
+            </Badge>
+          </div>
 
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl leading-tight">
-            Organizations &{" "}
-            <span className="bg-gradient-to-r from-primary via-violet-500 to-indigo-500 bg-clip-text text-transparent">
-              Workspaces
-            </span>
-          </h1>
+          {/* Large, Noticeable Personalized Greeting */}
+          <div className="space-y-1.5">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-foreground leading-tight">
+              Hi,{" "}
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent capitalize">
+                {userName || "there"}
+              </span>{" "}
+              <span className="inline-block hover:rotate-12 transition-transform duration-200">
+                👋
+              </span>
+            </h1>
 
-          <p className="text-xs sm:text-base text-muted-foreground leading-relaxed">
+            <p className="text-base sm:text-xl font-semibold text-foreground/80 tracking-tight">
+              Welcome to your Organizations & Workspaces
+            </p>
+          </div>
+
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl">
             Create, manage, and collaborate across enterprise organizations.
             Seamlessly switch teams, track sprint velocity, and run autonomous tasks in one unified hub.
           </p>

@@ -24,7 +24,6 @@ export function WorkspaceView() {
         totalMembers={stats.totalMembers}
         totalTasks={stats.totalTasks}
       />
-
       {/* Organizations Directory & Filtering */}
       <div className="space-y-2">
         <div>

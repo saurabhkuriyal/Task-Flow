@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/context/UserContext";
 import { cn } from "@/lib/utils";
 
 export interface NavItem {
@@ -44,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function Navbar() {
+  const { userName, isAuthenticated, clearUser } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
   const pathname = usePathname();
@@ -157,39 +159,78 @@ export function Navbar() {
 
         {/* Right Side: Auth & CTAs */}
         <div className="hidden sm:flex items-center gap-2.5">
-          <Link
-            href="/auth/signin"
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "sm" }),
-              "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            )}
-          >
-            Sign In
-          </Link>
+          {isAuthenticated && userName ? (
+            <>
+              <Link
+                href="/workspaces"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "gap-2 text-xs font-semibold"
+                )}
+              >
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span>{userName}</span>
+              </Link>
+              <button
+                type="button"
+                onClick={clearUser}
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "sm" }),
+                  "text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                )}
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/auth/signin"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "sm" }),
+                  "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                )}
+              >
+                Sign In
+              </Link>
 
-          <Link
-            href="/auth/signup"
-            className={cn(
-              buttonVariants({ variant: "default", size: "sm" }),
-              "group gap-1.5 text-sm font-medium shadow-xs transition-all duration-150 hover:shadow-md"
-            )}
-          >
-            <span>Get Started</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </Link>
+              <Link
+                href="/auth/signup"
+                className={cn(
+                  buttonVariants({ variant: "default", size: "sm" }),
+                  "group gap-1.5 text-sm font-medium shadow-xs transition-all duration-150 hover:shadow-md"
+                )}
+              >
+                <span>Get Started</span>
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile menu trigger */}
         <div className="flex sm:hidden items-center gap-2">
-          <Link
-            href="/auth/signin"
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "xs" }),
-              "text-xs font-medium"
-            )}
-          >
-            Sign In
-          </Link>
+          {isAuthenticated && userName ? (
+            <Link
+              href="/workspaces"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "xs" }),
+                "text-xs font-medium max-w-[100px] truncate"
+              )}
+            >
+              {userName}
+            </Link>
+          ) : (
+            <Link
+              href="/auth/signin"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "xs" }),
+                "text-xs font-medium"
+              )}
+            >
+              Sign In
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -246,27 +287,58 @@ export function Navbar() {
 
           {/* Mobile Bottom Actions */}
           <div className="border-t border-border/60 pt-4 flex flex-col gap-2.5">
-            <Link
-              href="/auth/signin"
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "w-full justify-center text-sm font-medium"
-              )}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/auth/signup"
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                buttonVariants({ variant: "default", size: "lg" }),
-                "w-full justify-center gap-1.5 text-sm font-medium shadow-xs"
-              )}
-            >
-              <span>Get Started</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {isAuthenticated && userName ? (
+              <>
+                <Link
+                  href="/workspaces"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    buttonVariants({ variant: "default", size: "lg" }),
+                    "w-full justify-center gap-2 text-sm font-semibold"
+                  )}
+                >
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span>Workspaces ({userName})</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearUser();
+                    setMobileMenuOpen(false);
+                  }}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                    "w-full justify-center text-sm font-medium cursor-pointer"
+                  )}
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/signin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                    "w-full justify-center text-sm font-medium"
+                  )}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    buttonVariants({ variant: "default", size: "lg" }),
+                    "w-full justify-center gap-1.5 text-sm font-medium shadow-xs"
+                  )}
+                >
+                  <span>Get Started</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            )}
             <p className="text-center text-[11px] text-muted-foreground pt-1">
               Enterprise Task Management & AI Tracking OS
             </p>

@@ -1,3 +1,4 @@
+
 import { WorkspaceView } from "@/components/workspace";
 
 export const metadata = {
@@ -6,5 +7,8 @@ export const metadata = {
 };
 
 export default function WorkspacesPage() {
-  return <WorkspaceView />;
+
+
+  return <WorkspaceView />
+
 }

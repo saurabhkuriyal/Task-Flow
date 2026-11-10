@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { authService } from "@/services/auth.service";
+import { useUser } from "@/context/UserContext";
 import { ROUTES } from "@/constants/routes";
 import type { SigninPayload } from "@/types/auth";
 
@@ -14,6 +15,7 @@ export interface SigninFormData {
 
 export function useSignin() {
   const router = useRouter();
+  const { setUser } = useUser();
   const [isLoading, setIsLoading] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
@@ -39,6 +41,15 @@ export function useSignin() {
       const response = await authService.signin(payload);
 
       if (response.success) {
+        if (response.user) {
+          // Inserting data in Context API
+          setUser({
+            userId: response.user.id,
+            userName: response.user.name,
+            role: response.user.role || null,
+          });
+        }
+
         setIsSuccess(true);
 
         setTimeout(() => {
