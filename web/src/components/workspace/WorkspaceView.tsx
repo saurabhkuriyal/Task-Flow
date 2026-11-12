@@ -14,6 +14,7 @@ export function WorkspaceView() {
     setFilterRole,
     toggleFavorite,
     stats,
+    isLoading,
   } = useWorkspaces();
 
   return (
@@ -37,6 +38,7 @@ export function WorkspaceView() {
 
         <OrganizationList
           organizations={filteredOrganizations}
+          isLoading={isLoading}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           filterRole={filterRole}

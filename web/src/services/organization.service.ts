@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from "@/constants/api";
 import type {
   CreateOrganizationPayload,
   CreateOrganizationResponse,
+  OrganizationDocumentData,
 } from "@/types/organization";
 
 class OrganizationService {
@@ -14,7 +15,7 @@ class OrganizationService {
   ): Promise<CreateOrganizationResponse> {
     try {
       const response = await axios.post<CreateOrganizationResponse>(
-        API_ENDPOINTS.ORGANIZATIONS,
+        API_ENDPOINTS.ORGANIZATIONS.CREATE,
         payload,
         {
           headers: {
@@ -36,8 +37,39 @@ class OrganizationService {
       throw new Error("An unexpected error occurred while creating the organization.");
     }
   }
+
+  /**
+   * Fetches organizations associated with a specific user ID
+   */
+  async getOrganizationsByUserId(userId: string): Promise<OrganizationDocumentData[]> {
+    try {
+      if (!userId || userId === "undefined") {
+        return [];
+      }
+
+      const response = await axios.get<{
+        success: boolean;
+        organizations: OrganizationDocumentData[];
+      } | OrganizationDocumentData[]>(
+        `${API_ENDPOINTS.ORGANIZATIONS.GET_ORGANIZATION}/${userId}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      return response.data.organizations || [];
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error("Fetch organizations by user error:", error.response?.data?.message || error.message);
+      }
+      return [];
+    }
+  }
 }
 
 export const organizationService = new OrganizationService();
 export default organizationService;
-

@@ -2,7 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Users, Layers, ArrowUpRight, Star, CheckCircle2 } from "lucide-react";
+import {
+  Users,
+  Layers,
+  ArrowUpRight,
+  Star,
+  CheckCircle2,
+  Building2,
+  Calendar,
+  TrendingUp,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -26,11 +35,15 @@ export function OrganizationCard({
     plan,
     membersCount,
     projectsCount,
-    activeTasksCount,
-    gradient,
-    avatarText,
+    gradient = "from-blue-600 to-indigo-600",
+    avatarText = "OR",
     updatedAt,
     isFavorite,
+    gstNo,
+    establishedYear,
+    mrr,
+    arr,
+    departmentsCount = 0,
   } = organization;
 
   return (
@@ -55,9 +68,15 @@ export function OrganizationCard({
                 <h3 className="font-semibold text-sm sm:text-base text-foreground truncate group-hover:text-primary transition-colors">
                   {name}
                 </h3>
-                <p className="text-[11px] sm:text-xs text-muted-foreground truncate font-mono">
-                  @{slug}
-                </p>
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-muted-foreground truncate">
+                  {gstNo ? (
+                    <span className="font-mono text-primary/80 font-medium truncate">
+                      {gstNo}
+                    </span>
+                  ) : (
+                    <span className="font-mono truncate">@{slug}</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -71,16 +90,37 @@ export function OrganizationCard({
               <Star
                 className={cn(
                   "h-4 w-4",
-                  isFavorite ? "fill-amber-400 text-amber-400" : "text-muted-foreground/60"
+                  isFavorite
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-muted-foreground/60"
                 )}
               />
             </button>
           </div>
 
-          {/* Description */}
-          <p className="mt-2.5 sm:mt-3 text-xs leading-relaxed text-muted-foreground line-clamp-2">
-            {description}
-          </p>
+          {/* Description or Establishment Info */}
+          <div className="mt-2.5 sm:mt-3 flex items-center justify-between text-xs text-muted-foreground">
+            {establishedYear ? (
+              <span className="inline-flex items-center gap-1 text-[11px]">
+                <Calendar className="h-3 w-3" />
+                <span>Est. {establishedYear}</span>
+              </span>
+            ) : (
+              <span className="line-clamp-1 text-[11px]">{description}</span>
+            )}
+
+            {mrr && mrr > 0 ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400 text-[11px]">
+                <TrendingUp className="h-3 w-3" />
+                <span>${mrr.toLocaleString()}/mo</span>
+              </span>
+            ) : arr && arr > 0 ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400 text-[11px]">
+                <TrendingUp className="h-3 w-3" />
+                <span>${arr.toLocaleString()}/yr</span>
+              </span>
+            ) : null}
+          </div>
         </div>
 
         {/* Badges & Meta */}
@@ -91,16 +131,21 @@ export function OrganizationCard({
                 variant="outline"
                 className={cn(
                   "text-[10px] font-semibold px-2 py-0.5",
-                  role === "OWNER" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                  role === "ADMIN" && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+                  role === "OWNER" &&
+                    "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                  role === "ADMIN" &&
+                    "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
                   role === "MEMBER" && "bg-muted text-muted-foreground"
                 )}
               >
                 {role}
               </Badge>
 
-              <Badge variant="secondary" className="text-[10px] font-medium px-2 py-0.5">
-                {plan}
+              <Badge
+                variant="secondary"
+                className="text-[10px] font-medium px-2 py-0.5"
+              >
+                {plan || "Enterprise"}
               </Badge>
             </div>
 
@@ -115,23 +160,29 @@ export function OrganizationCard({
             <div>
               <div className="flex items-center justify-center gap-1 text-muted-foreground text-[10px] sm:text-[11px]">
                 <Users className="h-3 w-3 shrink-0" />
-                <span>Members</span>
+                <span>Team</span>
               </div>
-              <span className="font-semibold text-foreground text-xs sm:text-sm">{membersCount}</span>
+              <span className="font-semibold text-foreground text-xs sm:text-sm">
+                {membersCount}
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center justify-center gap-1 text-muted-foreground text-[10px] sm:text-[11px]">
+                <Building2 className="h-3 w-3 shrink-0" />
+                <span>Depts</span>
+              </div>
+              <span className="font-semibold text-foreground text-xs sm:text-sm">
+                {departmentsCount}
+              </span>
             </div>
             <div>
               <div className="flex items-center justify-center gap-1 text-muted-foreground text-[10px] sm:text-[11px]">
                 <Layers className="h-3 w-3 shrink-0" />
                 <span>Projects</span>
               </div>
-              <span className="font-semibold text-foreground text-xs sm:text-sm">{projectsCount}</span>
-            </div>
-            <div>
-              <div className="flex items-center justify-center gap-1 text-muted-foreground text-[10px] sm:text-[11px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>Tasks</span>
-              </div>
-              <span className="font-semibold text-foreground text-xs sm:text-sm">{activeTasksCount}</span>
+              <span className="font-semibold text-foreground text-xs sm:text-sm">
+                {projectsCount}
+              </span>
             </div>
           </div>
 

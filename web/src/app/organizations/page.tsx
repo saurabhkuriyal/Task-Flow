@@ -1,10 +1,10 @@
-import { OrganizationsView } from "@/components/organizations";
+import { WorkspaceView } from "@/components/workspace";
 
 export const metadata = {
   title: "Organizations | TaskFlow",
-  description: "Manage enterprise organizations, team access, and autonomous AI agents in TaskFlow.",
+  description: "Manage enterprise organizations, team access, and projects in TaskFlow.",
 };
 
 export default function OrganizationsPage() {
-  return <OrganizationsView />;
+  return <WorkspaceView />;
 }

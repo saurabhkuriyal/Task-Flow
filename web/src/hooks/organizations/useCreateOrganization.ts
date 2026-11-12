@@ -4,11 +4,12 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { organizationService } from "@/services/organization.service";
-import { ROUTES } from "@/constants/routes";
+import { useUser } from "@/context/UserContext";
 import type { OrganizationFormValues, CreateOrganizationPayload } from "@/types/organization";
 
 export function useCreateOrganization() {
   const router = useRouter();
+  const { userId, userName, setUser } = useUser();
   const [isLoading, setIsLoading] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
@@ -44,12 +45,22 @@ export function useCreateOrganization() {
 
     try {
       const payload: CreateOrganizationPayload = {
+        ownerId: userId || undefined,
+        organizationName: data.companyName.trim(),
+        gstNo: data.gstNumber.trim().toUpperCase(),
+        establishedYear: Number(data.yearOfEstablishment),
+        teamSize: Number(data.noOfPeople),
+        mrr: Number(data.mrr) || 0,
+        arr: Number(data.arr) || 0,
+        members: userId ? [{ memberId: userId, name: userName || "Owner" }] : [],
+        employees: userId ? [{ empId: userId, name: userName || "Owner" }] : [],
+        departments: [],
+        projects: [],
+        // Backwards compatibility aliases
         name: data.companyName.trim(),
         gstNumber: data.gstNumber.trim().toUpperCase(),
         yearOfEstablishment: Number(data.yearOfEstablishment),
         noOfPeople: Number(data.noOfPeople),
-        mrr: Number(data.mrr) || 0,
-        arr: Number(data.arr) || 0,
         isAgreed: Boolean(data.isAgreed),
       };
 
@@ -57,6 +68,13 @@ export function useCreateOrganization() {
 
       if (response.success) {
         setIsSuccess(true);
+        if (response.organization) {
+          const org = response.organization as { _id?: string; id?: string; organizationName?: string };
+          setUser({
+            organizationId: (org._id || org.id || "") as string,
+            organizationName: org.organizationName || data.companyName.trim(),
+          });
+        }
         setTimeout(() => {
           router.push("/workspaces");
         }, 1200);
@@ -84,4 +102,3 @@ export function useCreateOrganization() {
 }
 
 export default useCreateOrganization;
-

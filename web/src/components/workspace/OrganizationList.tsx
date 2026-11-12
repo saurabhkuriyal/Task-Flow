@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 interface OrganizationListProps {
   organizations: WorkspaceOrganization[];
+  isLoading?: boolean;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   filterRole: "ALL" | OrganizationRole;
@@ -22,6 +23,7 @@ interface OrganizationListProps {
 
 export function OrganizationList({
   organizations,
+  isLoading = false,
   searchQuery,
   onSearchChange,
   filterRole,
@@ -84,8 +86,33 @@ export function OrganizationList({
         </div>
       </div>
 
-      {/* Grid or Empty State */}
-      {organizations.length > 0 ? (
+      {/* Grid or Skeleton or Empty State */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-64 rounded-2xl border border-border/60 bg-card/40 p-5 animate-pulse flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-muted" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-4 w-2/3 rounded bg-muted" />
+                    <div className="h-3 w-1/3 rounded bg-muted/70" />
+                  </div>
+                </div>
+                <div className="h-3 w-full rounded bg-muted/60 mt-4" />
+                <div className="h-3 w-4/5 rounded bg-muted/60" />
+              </div>
+              <div className="pt-4 border-t border-border/40 flex justify-between">
+                <div className="h-4 w-1/4 rounded bg-muted/50" />
+                <div className="h-4 w-1/4 rounded bg-muted/50" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : organizations.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {organizations.map((org) => (
             <OrganizationCard

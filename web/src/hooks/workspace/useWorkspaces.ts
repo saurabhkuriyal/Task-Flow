@@ -1,84 +1,162 @@
 "use client";
 
 import * as React from "react";
+import { organizationService } from "@/services/organization.service";
+import { useUser } from "@/context/UserContext";
 import type {
   WorkspaceOrganization,
   OrganizationRole,
 } from "@/types/workspace";
+import type { OrganizationDocumentData } from "@/types/organization";
 
-const INITIAL_ORGANIZATIONS: WorkspaceOrganization[] = [
-  {
-    id: "org-1",
-    name: "Acme Product Engineering",
-    slug: "acme-engineering",
-    description: "Core cloud infrastructure, unified microservices, and design systems for enterprise scale.",
-    role: "OWNER",
-    plan: "Enterprise",
-    membersCount: 32,
-    projectsCount: 8,
-    activeTasksCount: 46,
-    gradient: "from-blue-600 to-indigo-600",
-    avatarText: "AP",
-    updatedAt: "Active 5m ago",
-    isFavorite: true,
-  },
-  {
-    id: "org-2",
-    name: "Nova AI Labs",
-    slug: "nova-ai-labs",
-    description: "Agentic workflow automation, LLM telemetry evaluations, and autonomous coding task engines.",
-    role: "OWNER",
-    plan: "Pro",
-    membersCount: 14,
-    projectsCount: 5,
-    activeTasksCount: 28,
-    gradient: "from-violet-600 to-fuchsia-600",
-    avatarText: "NL",
-    updatedAt: "Active 18m ago",
-    isFavorite: true,
-  },
-  {
-    id: "org-3",
-    name: "Pulse Mobile & Design",
-    slug: "pulse-design",
-    description: "Next-gen iOS and Android design sprints, design tokens, and user experience telemetry.",
-    role: "ADMIN",
-    plan: "Growth",
-    membersCount: 19,
-    projectsCount: 4,
-    activeTasksCount: 17,
-    gradient: "from-emerald-600 to-teal-600",
-    avatarText: "PM",
-    updatedAt: "Active 2h ago",
-  },
-  {
-    id: "org-4",
-    name: "HyperScale DevOps",
-    slug: "hyperscale-devops",
-    description: "Distributed Kubernetes clusters, GitOps continuous pipelines, and security observability.",
-    role: "MEMBER",
-    plan: "Enterprise",
-    membersCount: 45,
-    projectsCount: 12,
-    activeTasksCount: 63,
-    gradient: "from-amber-600 to-orange-600",
-    avatarText: "HS",
-    updatedAt: "Active 1d ago",
-  },
+const GRADIENTS = [
+  "from-blue-600 to-indigo-600",
+  "from-violet-600 to-fuchsia-600",
+  "from-emerald-600 to-teal-600",
+  "from-amber-600 to-orange-600",
+  "from-rose-600 to-pink-600",
 ];
 
+function getInitials(name: string): string {
+  if (!name) return "OR";
+  return (
+    name
+      .split(" ")
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "OR"
+  );
+}
+
+function getGradient(name: string, index: number): string {
+  const charCodeSum = (name || "").split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return GRADIENTS[(charCodeSum + index) % GRADIENTS.length];
+}
+
+function mapDocToWorkspaceOrg(
+  doc: OrganizationDocumentData,
+  idx: number,
+  userId: string
+): WorkspaceOrganization {
+  const id = (doc._id || doc.id || `org-${idx}`) as string;
+  const name = doc.organizationName || "Untitled Organization";
+  const isOwner = String(doc.ownerId) === String(userId);
+  const role: OrganizationRole = isOwner ? "OWNER" : "MEMBER";
+
+  const membersCount =
+    doc.teamSize || (Array.isArray(doc.members) ? doc.members.length : 1);
+  const projectsCount = Array.isArray(doc.projects) ? doc.projects.length : 0;
+  const departmentsCount = Array.isArray(doc.departments)
+    ? doc.departments.length
+    : 0;
+
+  const dateStr = doc.createdAt
+    ? new Date(doc.createdAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Recently";
+
+  return {
+    id,
+    name,
+    slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    description: `GST: ${doc.gstNo || "N/A"} • Est. ${doc.establishedYear || "N/A"}`,
+    role,
+    plan: "Pro",
+    membersCount,
+    projectsCount,
+    activeTasksCount: projectsCount * 3, // Realistic task estimation from projects
+    gradient: getGradient(name, idx),
+    avatarText: getInitials(name),
+    updatedAt: `Created ${dateStr}`,
+    gstNo: doc.gstNo,
+    establishedYear: doc.establishedYear,
+    teamSize: doc.teamSize,
+    mrr: doc.mrr,
+    arr: doc.arr,
+    departmentsCount,
+    ownerId: String(doc.ownerId),
+    isFavorite: false,
+  };
+}
+
 export function useWorkspaces() {
-  const [organizations, setOrganizations] = React.useState<WorkspaceOrganization[]>(INITIAL_ORGANIZATIONS);
+  const { userId } = useUser();
+  const [organizations, setOrganizations] = React.useState<WorkspaceOrganization[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterRole, setFilterRole] = React.useState<"ALL" | OrganizationRole>("ALL");
+
+  // Load organizations whenever userId changes
+  React.useEffect(() => {
+    let isCancelled = false;
+
+    if (!userId) {
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        const data: OrganizationDocumentData[] =
+          await organizationService.getOrganizationsByUserId(userId);
+
+        if (!isCancelled) {
+          const mapped = (data || []).map((doc, idx) =>
+            mapDocToWorkspaceOrg(doc, idx, userId)
+          );
+          setOrganizations(mapped);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error("Failed to load organizations for user:", err);
+          setOrganizations([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [userId]);
+
+  // Manual refetch helper for explicit triggers
+  const refetch = React.useCallback(async () => {
+    if (!userId) return;
+    setIsLoading(true);
+    try {
+      const data: OrganizationDocumentData[] =
+        await organizationService.getOrganizationsByUserId(userId);
+      const mapped = (data || []).map((doc, idx) =>
+        mapDocToWorkspaceOrg(doc, idx, userId)
+      );
+      setOrganizations(mapped);
+    } catch (err) {
+      console.error("Failed to refetch organizations:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
 
   // Filter organizations by search text and selected role
   const filteredOrganizations = React.useMemo(() => {
     return organizations.filter((org) => {
+      const query = searchQuery.toLowerCase().trim();
       const matchesSearch =
-        org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.slug.toLowerCase().includes(searchQuery.toLowerCase());
+        !query ||
+        org.name.toLowerCase().includes(query) ||
+        (org.description && org.description.toLowerCase().includes(query)) ||
+        (org.slug && org.slug.toLowerCase().includes(query)) ||
+        (org.gstNo && org.gstNo.toLowerCase().includes(query));
 
       const matchesRole =
         filterRole === "ALL" ? true : org.role === filterRole;
@@ -113,6 +191,8 @@ export function useWorkspaces() {
     setFilterRole,
     toggleFavorite,
     stats,
+    isLoading,
+    refetch,
   };
 }
 

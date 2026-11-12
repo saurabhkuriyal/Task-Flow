@@ -1,3 +1,6 @@
+export * from "./auth.model";
+export * from "./organization.model";
+
 export interface User {
   id: string;
   username: string;

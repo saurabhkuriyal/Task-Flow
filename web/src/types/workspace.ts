@@ -5,17 +5,24 @@ export type OrganizationPlan = "Enterprise" | "Pro" | "Growth" | "Starter";
 export interface WorkspaceOrganization {
   id: string;
   name: string;
-  slug: string;
-  description: string;
+  slug?: string;
+  description?: string;
   role: OrganizationRole;
-  plan: OrganizationPlan;
+  plan?: OrganizationPlan;
   membersCount: number;
   projectsCount: number;
   activeTasksCount: number;
-  gradient: string;
-  avatarText: string;
-  updatedAt: string;
+  gradient?: string;
+  avatarText?: string;
+  updatedAt?: string;
   isFavorite?: boolean;
+  gstNo?: string;
+  establishedYear?: number;
+  teamSize?: number;
+  mrr?: number;
+  arr?: number;
+  departmentsCount?: number;
+  ownerId?: string;
 }
 
 export interface CreateOrganizationInput {
@@ -25,4 +32,3 @@ export interface CreateOrganizationInput {
   gradient?: string;
   plan?: OrganizationPlan;
 }
-

@@ -1,29 +1,69 @@
-export interface CreateOrganizationPayload {
+export interface MemberItem {
+  memberId: string;
   name: string;
-  gstNumber: string;
-  yearOfEstablishment: number;
-  noOfPeople: number;
-  mrr: number;
+}
+
+export interface DepartmentItem {
+  departmentId: string;
+  departmentName: string;
+  head?: string;
+  project?: string;
+}
+
+export interface ProjectItem {
+  projectId: string;
+  name: string;
+  lead?: string;
+}
+
+export interface EmployeeItem {
+  empId: string;
+  name: string;
+}
+
+export interface CreateOrganizationPayload {
+  ownerId?: string;
+  organizationName: string;
+  gstNo: string;
+  establishedYear: number;
+  teamSize: number;
   arr: number;
-  isAgreed: boolean;
+  mrr: number;
+  members?: MemberItem[];
+  departments?: DepartmentItem[];
+  projects?: ProjectItem[];
+  employees?: EmployeeItem[];
+  // Backwards-compatible aliases from the form
+  name?: string;
+  gstNumber?: string;
+  yearOfEstablishment?: number;
+  noOfPeople?: number;
+  isAgreed?: boolean;
   description?: string;
+}
+
+export interface OrganizationDocumentData {
+  _id?: string;
+  id?: string;
+  ownerId: string;
+  organizationName: string;
+  gstNo: string;
+  establishedYear: number;
+  teamSize: number;
+  arr: number;
+  mrr: number;
+  members: MemberItem[];
+  departments: DepartmentItem[];
+  projects: ProjectItem[];
+  employees: EmployeeItem[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateOrganizationResponse {
   success: boolean;
   message: string;
-  organization?: {
-    id: string;
-    name: string;
-    slug: string;
-    gstNumber: string;
-    yearOfEstablishment: number;
-    noOfPeople: number;
-    mrr: number;
-    arr: number;
-    role: string;
-    createdAt: string;
-  };
+  organization?: OrganizationDocumentData | Record<string, unknown>;
 }
 
 export interface OrganizationFormValues {
@@ -35,4 +75,3 @@ export interface OrganizationFormValues {
   arr: number | string;
   isAgreed: boolean;
 }
-
