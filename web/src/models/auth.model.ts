@@ -1,16 +1,42 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
+export interface ICreatedOrganisation {
+  createdOrganisationId: string;
+  createdOrganisationName: string;
+}
+
+export interface IUserOrganisation {
+  organisationId: string;
+  organisationName: string;
+}
+
+export interface IUserDepartment {
+  departmentId: string;
+  departmentName: string;
+}
+
+export interface IUserChiefOf {
+  organisationId: string;
+  organisationName: string;
+}
+
+export interface IUserManagerOf {
+  organisationId: string;
+  organisationName: string;
+  departmentId: string;
+  departmentName: string;
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
   phoneNumber: string;
   password: string;
-  createdOrganisationName: string
-  createdOrganisationId: string
-  organisations: [],
-  departments: [],
-  chiefOf: [],
-  managerOf: [],
+  createdOrganisations?: ICreatedOrganisation[];
+  organisations?: IUserOrganisation[];
+  departments?: IUserDepartment[];
+  chiefOf?: IUserChiefOf[];
+  managerOf?: IUserManagerOf[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,12 +65,16 @@ const UserSchema = new Schema<IUser>(
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
     },
-    createdOrganisationName: {
-      type: String,
-    },
-    createdOrganisationId: {
-      type: String,
-    },
+    createdOrganisations: [
+      {
+        createdOrganisationId: {
+          type: String,
+        },
+        createdOrganisationName: {
+          type: String,
+        },
+      },
+    ],
     organisations: [{
       organisationId: {
         type: String,
@@ -90,7 +120,14 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
-// Prevent model recompilation in Next.js hot reload environment
+// Prevent model recompilation in Next.js hot reload environment, while ensuring schema updates take effect
+if (
+  mongoose.models.User &&
+  !mongoose.models.User.schema.paths["createdOrganisations"]
+) {
+  delete (mongoose.models as Record<string, unknown>).User;
+}
+
 const UserModel: Model<IUser> =
   (mongoose.models.User as Model<IUser>) ||
   mongoose.model<IUser>("User", UserSchema);

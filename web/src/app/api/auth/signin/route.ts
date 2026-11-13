@@ -4,7 +4,6 @@ import UserModel from "@/models/auth.model";
 import bcrypt from "bcryptjs";
 import type { SigninResponse } from "@/types/auth";
 import { signInToken } from "@/lib/auth";
-import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
@@ -50,10 +49,10 @@ export async function POST(req: Request) {
       );
     }
     const token: string = await signInToken({
-      id: user._id,
+      id: user._id.toString(),
       name: user.name,
-      email: user.email
-    })
+      email: user.email,
+    });
 
     // console.log("tokenn is", token);
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import mongoose from "mongoose";
 import dbConnect from "@/utils/db";
 import { OrganizationModel } from "@/models/organization.model";
 import UserModel from "@/models/auth.model";
@@ -14,24 +15,47 @@ export async function POST(req: Request) {
     // 1. Resolve ownerId and owner name from auth token cookie or request body
     let ownerId = body.ownerId;
     let ownerName = body.ownerName || "Owner";
+    let ownerEmail = "";
 
     try {
       const cookieStore = await cookies();
       const token = cookieStore.get("token")?.value;
       if (token) {
         const { payload } = await verifyToken(token);
-        if (payload?.id) {
-          ownerId = String(payload.id);
+        if (
+          payload?.id &&
+          typeof payload.id === "string" &&
+          payload.id !== "[object Object]"
+        ) {
+          ownerId = payload.id;
         }
-        if (payload?.name) {
-          ownerName = String(payload.name);
+        if (payload?.name && typeof payload.name === "string") {
+          ownerName = payload.name;
+        }
+        if (payload?.email && typeof payload.email === "string") {
+          ownerEmail = payload.email.toLowerCase().trim();
         }
       }
     } catch {
       // Token verification failed or not provided; fallback to body.ownerId
     }
 
-    if (!ownerId) {
+    // If ownerId is invalid or [object Object], resolve from email or body.ownerId
+    if ((!ownerId || !mongoose.Types.ObjectId.isValid(ownerId)) && ownerEmail) {
+      const userByEmail = await UserModel.findOne({ email: ownerEmail });
+      if (userByEmail) {
+        ownerId = userByEmail._id.toString();
+        ownerName = userByEmail.name || ownerName;
+      }
+    } else if (
+      (!ownerId || !mongoose.Types.ObjectId.isValid(ownerId)) &&
+      body.ownerId &&
+      mongoose.Types.ObjectId.isValid(body.ownerId)
+    ) {
+      ownerId = String(body.ownerId);
+    }
+
+    if (!ownerId || ownerId === "[object Object]") {
       return NextResponse.json(
         {
           success: false,
@@ -127,20 +151,52 @@ export async function POST(req: Request) {
       employees,
     });
 
-    // 6. Update user's organization profile if valid UserModel exists
+    // 6. Update user's organization profile in UserModel (auth.model)
+    let updatedUser = null;
     try {
-      await UserModel.findByIdAndUpdate(ownerId, {
-        createdOrganisationId: newOrganization._id.toString(),
-        createdOrganisationName: newOrganization.organizationName,
+      const orgId = newOrganization._id.toString();
+      const orgName = newOrganization.organizationName;
+
+      const createdOrgItem = {
+        createdOrganisationId: orgId,
+        createdOrganisationName: orgName,
+      };
+
+      const userUpdateQuery = {
         $addToSet: {
+          createdOrganisations: createdOrgItem,
           organisations: {
-            organisationId: newOrganization._id.toString(),
-            organisationName: newOrganization.organizationName,
+            organisationId: orgId,
+            organisationName: orgName,
           },
         },
-      });
+      };
+
+      const userFilter = mongoose.Types.ObjectId.isValid(ownerId)
+        ? { _id: new mongoose.Types.ObjectId(ownerId) }
+        : { $or: [{ _id: ownerId }, { email: String(ownerId).toLowerCase().trim() }] };
+
+      // 1. Update using Mongoose Model
+      updatedUser = await UserModel.findOneAndUpdate(
+        userFilter,
+        userUpdateQuery,
+        { new: true }
+      );
+
+      // 2. Direct driver update fallback (ensures write if Next.js hot reload cached an older schema)
+      if (!updatedUser || !updatedUser.createdOrganisations?.length) {
+        await UserModel.collection.updateOne(userFilter, userUpdateQuery);
+        updatedUser = await UserModel.findOne(userFilter);
+      }
+
+      console.log(
+        "[createOrganization] User updated in MongoDB successfully:",
+        updatedUser?._id,
+        "Org:",
+        orgName
+      );
     } catch (err) {
-      console.warn("Could not link organization to user profile:", err);
+      console.error("[createOrganization] Error updating user in MongoDB:", err);
     }
 
     return NextResponse.json(
@@ -148,6 +204,15 @@ export async function POST(req: Request) {
         success: true,
         message: "Organization created successfully!",
         organization: newOrganization,
+        user: updatedUser
+          ? {
+              id: updatedUser._id.toString(),
+              name: updatedUser.name,
+              email: updatedUser.email,
+              createdOrganisations: updatedUser.createdOrganisations,
+              organisations: updatedUser.organisations,
+            }
+          : undefined,
       },
       { status: 201 }
     );
