@@ -1,9 +1,11 @@
+export type UserRole = "owner" | "chief" | "employee" | "employees";
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phoneNumber?: string;
-  role?: string;
+  role?: UserRole | string;
 }
 
 export interface SignupPayload {
@@ -12,6 +14,7 @@ export interface SignupPayload {
   phoneNumber: string;
   password: string;
   confirmPassword?: string;
+  role?: UserRole | string;
 }
 
 export interface SignupResponse {

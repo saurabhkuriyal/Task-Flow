@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     await connectDB();
 
     const body: SignupPayload = await req.json();
-    const { name, email, phoneNumber, password } = body;
+    const { name, email, phoneNumber, password, role } = body;
 
     if (!name || !email || !phoneNumber || !password) {
       return NextResponse.json(
@@ -29,6 +29,27 @@ export async function POST(req: Request) {
         },
         { status: 400 }
       );
+    }
+
+    // Role handling: if role is not provided, default to "owner"
+    let assignedRole: "owner" | "chief" | "employee" = "owner";
+    if (role) {
+      const normalized = String(role).toLowerCase().trim();
+      if (normalized === "chief") {
+        assignedRole = "chief";
+      } else if (normalized === "employee" || normalized === "employees") {
+        assignedRole = "employee";
+      } else if (normalized === "owner") {
+        assignedRole = "owner";
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Role must be 'owner', 'chief', or 'employee'.",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -55,6 +76,7 @@ export async function POST(req: Request) {
       email: normalizedEmail,
       phoneNumber: phoneNumber.trim(),
       password: hashedPassword,
+      role: assignedRole,
     });
 
     const response: SignupResponse = {
@@ -66,10 +88,11 @@ export async function POST(req: Request) {
         name: newUser.name,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
       },
     };
 
-    console.log("Signup successful:", response.user?.email);
+    console.log("Signup successful:", response.user?.email, "Role:", response.user?.role);
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {

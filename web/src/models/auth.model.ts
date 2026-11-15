@@ -15,7 +15,7 @@ export interface IUserDepartment {
   departmentName: string;
 }
 
-export interface IUserChiefOf {
+export interface IUserLedOf {
   organisationId: string;
   organisationName: string;
 }
@@ -32,10 +32,11 @@ export interface IUser extends Document {
   email: string;
   phoneNumber: string;
   password: string;
+  role?: "owner" | "chief" | "employee" | "employees";
   createdOrganisations?: ICreatedOrganisation[];
   organisations?: IUserOrganisation[];
   departments?: IUserDepartment[];
-  chiefOf?: IUserChiefOf[];
+  ledOf?: IUserLedOf[];
   managerOf?: IUserManagerOf[];
   createdAt: Date;
   updatedAt: Date;
@@ -65,6 +66,11 @@ const UserSchema = new Schema<IUser>(
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
     },
+    role: {
+      type: String,
+      enum: ["owner", "chief", "employee", "employees"],
+      default: "owner",
+    },
     createdOrganisations: [
       {
         createdOrganisationId: {
@@ -91,14 +97,13 @@ const UserSchema = new Schema<IUser>(
         type: String,
       },
     }],
-    chiefOf: [{
+    ledOf: [{
       organisationId: {
         type: String,
       },
       organisationName: {
         type: String,
       },
-
     }],
     managerOf: [{
       organisationId: {
@@ -123,7 +128,9 @@ const UserSchema = new Schema<IUser>(
 // Prevent model recompilation in Next.js hot reload environment, while ensuring schema updates take effect
 if (
   mongoose.models.User &&
-  !mongoose.models.User.schema.paths["createdOrganisations"]
+  (!mongoose.models.User.schema.paths["createdOrganisations"] ||
+    !mongoose.models.User.schema.paths["LedOf"] ||
+    !mongoose.models.User.schema.paths["role"])
 ) {
   delete (mongoose.models as Record<string, unknown>).User;
 }
