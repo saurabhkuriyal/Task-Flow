@@ -22,24 +22,13 @@ export interface EmployeeItem {
 }
 
 export interface CreateOrganizationPayload {
-  ownerId?: string;
   organizationName: string;
   gstNo: string;
   establishedYear: number;
   teamSize: number;
-  arr: number;
   mrr: number;
-  members?: MemberItem[];
-  departments?: DepartmentItem[];
-  projects?: ProjectItem[];
-  employees?: EmployeeItem[];
-  // Backwards-compatible aliases from the form
-  name?: string;
-  gstNumber?: string;
-  yearOfEstablishment?: number;
-  noOfPeople?: number;
-  isAgreed?: boolean;
-  description?: string;
+  arr: number;
+  ownerId?: string;
 }
 
 export interface OrganizationDocumentData {

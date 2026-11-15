@@ -66,26 +66,10 @@ export async function POST(req: Request) {
     }
 
     // 2. Extract and validate organization properties
-    const organizationName = (
-      body.organizationName ||
-      body.name ||
-      body.companyName ||
-      ""
-    ).trim();
-
-    const gstNo = (
-      body.gstNo ||
-      body.gstNumber ||
-      ""
-    )
-      .trim()
-      .toUpperCase();
-
-    const establishedYear = Number(
-      body.establishedYear || body.yearOfEstablishment
-    );
-
-    const teamSize = Number(body.teamSize || body.noOfPeople) || 1;
+    const organizationName = (body.organizationName || "").trim();
+    const gstNo = (body.gstNo || "").trim().toUpperCase();
+    const establishedYear = Number(body.establishedYear);
+    const teamSize = Number(body.teamSize) || 1;
     const mrr = Number(body.mrr) || 0;
     const arr = Number(body.arr) || mrr * 12;
 
@@ -122,33 +106,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Default members and employees to include owner if empty
-    const members =
-      Array.isArray(body.members) && body.members.length > 0
-        ? body.members
-        : [{ memberId: String(ownerId), name: ownerName }];
-
-    const departments = Array.isArray(body.departments) ? body.departments : [];
-    const projects = Array.isArray(body.projects) ? body.projects : [];
-
-    const employees =
-      Array.isArray(body.employees) && body.employees.length > 0
-        ? body.employees
-        : [{ empId: String(ownerId), name: ownerName }];
+    // 4. Initialize default members and employees with the creating owner
+    const members = [{ memberId: String(ownerId), name: ownerName }];
+    const employees = [{ empId: String(ownerId), name: ownerName }];
+    const departments: Record<string, unknown>[] = [];
+    const projects: Record<string, unknown>[] = [];
 
     // 5. Create new organization document in MongoDB
     const newOrganization = await OrganizationModel.create({
       ownerId,
-      members,
-      departments,
-      projects,
       organizationName,
       gstNo,
       establishedYear,
       teamSize,
       arr,
       mrr,
+      members,
       employees,
+      departments,
+      projects,
     });
 
     // 6. Update user's organization profile in UserModel (auth.model)

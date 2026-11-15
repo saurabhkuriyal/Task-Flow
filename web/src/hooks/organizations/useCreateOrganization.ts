@@ -9,7 +9,7 @@ import type { OrganizationFormValues, CreateOrganizationPayload } from "@/types/
 
 export function useCreateOrganization() {
   const router = useRouter();
-  const { userId, userName, setUser } = useUser();
+  const { userId, setUser } = useUser();
   const [isLoading, setIsLoading] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
@@ -45,23 +45,13 @@ export function useCreateOrganization() {
 
     try {
       const payload: CreateOrganizationPayload = {
-        ownerId: userId || undefined,
         organizationName: data.companyName.trim(),
         gstNo: data.gstNumber.trim().toUpperCase(),
         establishedYear: Number(data.yearOfEstablishment),
         teamSize: Number(data.noOfPeople),
         mrr: Number(data.mrr) || 0,
         arr: Number(data.arr) || 0,
-        members: userId ? [{ memberId: userId, name: userName || "Owner" }] : [],
-        employees: userId ? [{ empId: userId, name: userName || "Owner" }] : [],
-        departments: [],
-        projects: [],
-        // Backwards compatibility aliases
-        name: data.companyName.trim(),
-        gstNumber: data.gstNumber.trim().toUpperCase(),
-        yearOfEstablishment: Number(data.yearOfEstablishment),
-        noOfPeople: Number(data.noOfPeople),
-        isAgreed: Boolean(data.isAgreed),
+        ownerId: userId || undefined,
       };
 
       const response = await organizationService.createOrganization(payload);
