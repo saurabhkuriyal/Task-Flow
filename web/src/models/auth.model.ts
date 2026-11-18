@@ -33,6 +33,7 @@ export interface IUser extends Document {
   phoneNumber: string;
   password: string;
   role?: "owner" | "chief" | "employee" | "employees";
+  status?: "active" | "inactive" | string;
   createdOrganisations?: ICreatedOrganisation[];
   organisations?: IUserOrganisation[];
   departments?: IUserDepartment[];
@@ -70,6 +71,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ["owner", "chief", "employee", "employees"],
       default: "owner",
+    },
+    status: {
+      type: String,
+      default: "active",
+      trim: true,
     },
     createdOrganisations: [
       {

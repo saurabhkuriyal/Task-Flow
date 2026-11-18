@@ -128,6 +128,8 @@ export function WorkspaceSidebar({
                 ? `/organizations/${orgId}`
                 : item.id === "members"
                 ? `/organizations/${orgId}/members`
+                : item.id === "streams"
+                ? `/organizations/${orgId}/streams`
                 : `/organizations/${orgId}?tab=${item.id}`;
 
             return (
