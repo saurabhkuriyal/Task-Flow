@@ -2,26 +2,21 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { 
-  ArrowRight, 
-  Sparkles, 
-  CheckCircle2, 
-  Clock, 
-  Bot, 
-  Play, 
-  Activity, 
-  TrendingUp, 
-  Users, 
-  Filter,
+import {
+  ArrowRight,
+  Sparkles,
+  Clock,
+  Bot,
+  Play,
+  TrendingUp,
   Check,
   ChevronRight,
   Zap,
-  Star
+  Star,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage, AvatarBadge } from "@/components/ui/avatar";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarBadge } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 interface TaskItem {
@@ -107,7 +102,7 @@ const INITIAL_TASKS: TaskItem[] = [
 
 export function HeroSection() {
   const [activeTab, setActiveTab] = React.useState<"All" | "In Progress" | "Agentic AI" | "Completed">("All");
-  const [tasks, setTasks] = React.useState<TaskItem[]>(INITIAL_TASKS);
+  const [tasks] = React.useState<TaskItem[]>(INITIAL_TASKS);
   const [isAiAssigning, setIsAiAssigning] = React.useState(false);
   const [notification, setNotification] = React.useState<string | null>(null);
 

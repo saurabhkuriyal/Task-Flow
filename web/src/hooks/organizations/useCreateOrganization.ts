@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { organizationService } from "@/services/organization.service";
 import { useUser } from "@/context/UserContext";
 import type { OrganizationFormValues, CreateOrganizationPayload } from "@/types/organization";
@@ -27,8 +27,8 @@ export function useCreateOrganization() {
     mode: "onBlur",
   });
 
-  const { watch, setValue } = form;
-  const currentMrr = watch("mrr");
+  const { setValue, control } = form;
+  const currentMrr = useWatch({ control, name: "mrr" });
 
   // Helpful auto-suggest: if ARR is untouched/empty and MRR is entered, pre-fill ARR = MRR * 12
   React.useEffect(() => {
