@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useMemo, useSyncExternalStore } from "react";
 
 // ==========================================
 // 1. User State Type Definitions
@@ -34,6 +34,28 @@ const defaultUserState: UserState = {
   role: null,
 };
 
+// Helpers for syncing with localStorage safely without hydration mismatch
+function subscribeUserStorage(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("user-auth-change", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("user-auth-change", callback);
+  };
+}
+
+function getUserSnapshot(): string | null {
+  try {
+    return localStorage.getItem("user_data");
+  } catch {
+    return null;
+  }
+}
+
+function getServerUserSnapshot(): string | null {
+  return null;
+}
+
 // ==========================================
 // 2. Create the Context
 // ==========================================
@@ -42,36 +64,43 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // ==========================================
 // 3. User Provider Component
 // ==========================================
-// Wraps your app (in layout.tsx) so all child components can access this state
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUserState] = useState<UserState>(defaultUserState);
+  // useSyncExternalStore guarantees server HTML matches initial client hydration snapshot
+  const rawUser = useSyncExternalStore(
+    subscribeUserStorage,
+    getUserSnapshot,
+    getServerUserSnapshot
+  );
 
-  // When app loads in the browser, check if we previously saved user details
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user_data");
-    if (savedUser) {
-      try {
-        setUserState(JSON.parse(savedUser));
-      } catch (error) {
-        console.error("Could not parse saved user data:", error);
-      }
+  const user = useMemo<UserState>(() => {
+    if (!rawUser) return defaultUserState;
+    try {
+      return JSON.parse(rawUser) as UserState;
+    } catch (error) {
+      console.error("Could not parse saved user data:", error);
+      return defaultUserState;
     }
-  }, []);
+  }, [rawUser]);
 
   // Updates any user fields (e.g. userId and userName on login, or organization later)
   const setUser = (data: Partial<UserState>) => {
-    setUserState((prev) => {
-      const updatedUser = { ...prev, ...data };
-      // Save to localStorage so state stays after page refresh
+    const updatedUser = { ...user, ...data };
+    try {
       localStorage.setItem("user_data", JSON.stringify(updatedUser));
-      return updatedUser;
-    });
+      window.dispatchEvent(new Event("user-auth-change"));
+    } catch (error) {
+      console.error("Failed to save user data to localStorage:", error);
+    }
   };
 
   // Clears all user fields and removes saved data on logout
   const clearUser = () => {
-    localStorage.removeItem("user_data");
-    setUserState(defaultUserState);
+    try {
+      localStorage.removeItem("user_data");
+      window.dispatchEvent(new Event("user-auth-change"));
+    } catch (error) {
+      console.error("Failed to clear user data from localStorage:", error);
+    }
   };
 
   return (
@@ -91,7 +120,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 // ==========================================
 // 4. Custom Hook for Simple Usage
 // ==========================================
-// In any component: const { userId, userName, setUser, clearUser } = useUser();
 export function useUser() {
   const context = useContext(UserContext);
   if (!context) {

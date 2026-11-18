@@ -82,10 +82,21 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Hide the global navbar on organization workspace routes (/organizations/[orgId])
+  const isOrgWorkspace = Boolean(
+    pathname &&
+    (pathname.startsWith("/organizations/") || pathname.startsWith("/organization/")) &&
+    pathname !== "/organizations/createOrganization"
+  );
+
+  if (isOrgWorkspace) {
+    return null;
+  }
+
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-200 select-none",
+        "sticky top-0 z-50 w-full transition-all duration-200 select-none",
         mobileMenuOpen
           ? "border-b border-border/80 bg-white dark:bg-zinc-950 shadow-xs"
           : isScrolled
