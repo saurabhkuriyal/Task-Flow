@@ -2,10 +2,16 @@ export type UserRole = "owner" | "chief" | "employee" | "employees";
 
 export interface User {
   id: string;
+  _id?: string;
   name: string;
   email: string;
   phoneNumber?: string;
   role?: UserRole | string;
+  organisations?: Array<{
+    organisationId: string;
+    organisationName: string;
+  }>;
+  createdAt?: string | Date;
 }
 
 export interface SignupPayload {
@@ -15,6 +21,10 @@ export interface SignupPayload {
   password: string;
   confirmPassword?: string;
   role?: UserRole | string;
+  organisationId?: string;
+  organisationName?: string;
+  organizationId?: string;
+  organizationName?: string;
 }
 
 export interface SignupResponse {

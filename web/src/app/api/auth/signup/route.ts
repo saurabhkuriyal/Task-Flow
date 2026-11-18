@@ -70,6 +70,35 @@ export async function POST(req: Request) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Extract organization details if provided
+    const targetOrgId = (body.organisationId || body.organizationId)?.trim();
+    let targetOrgName = (body.organisationName || body.organizationName)?.trim();
+
+    // If orgId is given but name is not, attempt to fetch organizationName
+    if (targetOrgId && !targetOrgName) {
+      try {
+        const { OrganizationModel } = await import("@/models/organization.model");
+        const foundOrg = await OrganizationModel.findById(targetOrgId)
+          .select("organizationName")
+          .lean();
+        if (foundOrg?.organizationName) {
+          targetOrgName = foundOrg.organizationName;
+        }
+      } catch (err) {
+        console.error("Lookup organizationName error during signup:", err);
+      }
+    }
+
+    const userOrganisations =
+      targetOrgId && targetOrgName
+        ? [
+            {
+              organisationId: targetOrgId,
+              organisationName: targetOrgName,
+            },
+          ]
+        : [];
+
     // Save user to database
     const newUser = await UserModel.create({
       name: name.trim(),
@@ -77,7 +106,25 @@ export async function POST(req: Request) {
       phoneNumber: phoneNumber.trim(),
       password: hashedPassword,
       role: assignedRole,
+      ...(userOrganisations.length > 0 ? { organisations: userOrganisations } : {}),
     });
+
+    // Optionally append member to organization
+    if (targetOrgId) {
+      try {
+        const { OrganizationModel } = await import("@/models/organization.model");
+        await OrganizationModel.findByIdAndUpdate(targetOrgId, {
+          $addToSet: {
+            members: {
+              memberId: newUser._id.toString(),
+              name: newUser.name,
+            },
+          },
+        });
+      } catch (err) {
+        console.error("Could not append member to organization:", err);
+      }
+    }
 
     const response: SignupResponse = {
       success: true,
@@ -89,6 +136,10 @@ export async function POST(req: Request) {
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
         role: newUser.role,
+        organisations: newUser.organisations?.map((org) => ({
+          organisationId: org.organisationId,
+          organisationName: org.organisationName,
+        })),
       },
     };
 

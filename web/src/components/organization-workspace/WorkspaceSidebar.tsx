@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Home,
   Users,
@@ -57,9 +57,10 @@ export function WorkspaceSidebar({
 }: WorkspaceSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { clearUser } = useUser();
 
-  const currentTab = (searchParams?.get("tab") as SidebarNavId) || activeItem || "home";
+  const currentTab = (searchParams?.get("tab") as SidebarNavId) || activeItem;
 
   const handleLogout = () => {
     clearUser();
@@ -110,10 +111,23 @@ export function WorkspaceSidebar({
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = currentTab === item.id;
+
+            const isCurrentPath =
+              item.id === "home"
+                ? pathname === `/organizations/${orgId}` ||
+                  pathname === `/organizations/${orgId}/`
+                : pathname === `/organizations/${orgId}/${item.id}` ||
+                  pathname.startsWith(`/organizations/${orgId}/${item.id}/`);
+
+            const isActive = currentTab
+              ? currentTab === item.id
+              : isCurrentPath;
+
             const href =
               item.id === "home"
                 ? `/organizations/${orgId}`
+                : item.id === "members"
+                ? `/organizations/${orgId}/members`
                 : `/organizations/${orgId}?tab=${item.id}`;
 
             return (
