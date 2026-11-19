@@ -15,6 +15,10 @@ export interface AddDepartmentModalProps {
   organisationName?: string;
   title?: string;
   subtitle?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
+  subStreamId?: string;
+  subStreamName?: string;
 }
 
 export function AddDepartmentModal({
@@ -25,9 +29,20 @@ export function AddDepartmentModal({
   organisationName,
   title,
   subtitle,
+  parentStreamId,
+  parentStreamName,
+  subStreamId,
+  subStreamName,
 }: AddDepartmentModalProps) {
   const { form, isLoading, serverError, isSuccess, onSubmit, reset } =
-    useAddDepartment({ organisationId, organisationName });
+    useAddDepartment({
+      organisationId,
+      organisationName,
+      parentStreamId,
+      parentStreamName,
+      subStreamId,
+      subStreamName,
+    });
 
   const {
     register,

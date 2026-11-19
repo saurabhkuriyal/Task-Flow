@@ -21,6 +21,12 @@ export interface UseAddDepartmentOptions {
   creatorName?: string;
   leadId?: string;
   leadName?: string;
+  subStreamId?: string;
+  subStreamName?: string;
+  substreamId?: string;
+  substreamName?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
   onSuccess?: () => void;
 }
 
@@ -70,6 +76,10 @@ export function useAddDepartment(options?: UseAddDepartmentOptions) {
         creatorName: currentCreatorName,
         leadId: options?.leadId,
         leadName: options?.leadName,
+        subStreamId: options?.subStreamId || options?.substreamId,
+        subStreamName: options?.subStreamName || options?.substreamName,
+        parentStreamId: options?.parentStreamId,
+        parentStreamName: options?.parentStreamName,
         type: "department",
       };
 

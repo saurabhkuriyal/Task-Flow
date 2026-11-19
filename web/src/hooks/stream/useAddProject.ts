@@ -19,6 +19,12 @@ export interface UseAddProjectOptions {
   organisationName?: string;
   creatorId?: string;
   creatorName?: string;
+  subStreamId?: string;
+  subStreamName?: string;
+  substreamId?: string;
+  substreamName?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
   onSuccess?: () => void;
 }
 
@@ -68,6 +74,10 @@ export function useAddProject(options?: UseAddProjectOptions) {
         creatorName: currentCreatorName,
         leadId: "",
         leadName: "",
+        subStreamId: options?.subStreamId || options?.substreamId,
+        subStreamName: options?.subStreamName || options?.substreamName,
+        parentStreamId: options?.parentStreamId,
+        parentStreamName: options?.parentStreamName,
         type: "project",
       };
 

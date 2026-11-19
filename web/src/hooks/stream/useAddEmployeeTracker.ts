@@ -15,6 +15,12 @@ export interface UseAddEmployeeTrackerOptions {
   organisationName?: string;
   creatorId?: string;
   creatorName?: string;
+  subStreamId?: string;
+  subStreamName?: string;
+  substreamId?: string;
+  substreamName?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
   onSuccess?: () => void;
 }
 
@@ -105,6 +111,10 @@ export function useAddEmployeeTracker(options?: UseAddEmployeeTrackerOptions) {
           organisationName: currentOrgName,
           creatorId: currentCreatorId,
           creatorName: currentCreatorName,
+          subStreamId: options?.subStreamId || options?.substreamId,
+          subStreamName: options?.subStreamName || options?.substreamName,
+          parentStreamId: options?.parentStreamId,
+          parentStreamName: options?.parentStreamName,
           type: "empTracker",
         };
 

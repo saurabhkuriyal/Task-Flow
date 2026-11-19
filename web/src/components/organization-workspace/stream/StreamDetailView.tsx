@@ -446,6 +446,8 @@ export function StreamDetailView() {
         onSuccess={refetch}
         organisationId={currentOrgId}
         organisationName={currentOrgName}
+        parentStreamId={streamId}
+        parentStreamName={stream?.name}
         title="Add Sub-department"
         subtitle="Create a sub-department within this stream"
       />
@@ -457,6 +459,8 @@ export function StreamDetailView() {
         onSuccess={refetch}
         organisationId={currentOrgId}
         organisationName={currentOrgName}
+        parentStreamId={streamId}
+        parentStreamName={stream?.name}
       />
 
       {/* Add Employee Tracker Modal */}
@@ -466,6 +470,8 @@ export function StreamDetailView() {
         onSuccess={refetch}
         organisationId={currentOrgId}
         organisationName={currentOrgName}
+        parentStreamId={streamId}
+        parentStreamName={stream?.name}
       />
     </div>
   );

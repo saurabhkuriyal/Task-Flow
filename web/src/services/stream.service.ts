@@ -10,6 +10,10 @@ export interface CreateStreamPayload {
   leadId?: string;
   leadName?: string;
   type?: "department" | "project" | "empTracker";
+  subStreamId?: string;
+  subStreamName?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
 }
 
 // Backward-compatibility alias

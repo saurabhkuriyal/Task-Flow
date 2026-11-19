@@ -13,6 +13,10 @@ export interface AddProjectModalProps {
   onSuccess?: () => void;
   organisationId?: string;
   organisationName?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
+  subStreamId?: string;
+  subStreamName?: string;
 }
 
 export function AddProjectModal({
@@ -21,9 +25,20 @@ export function AddProjectModal({
   onSuccess,
   organisationId,
   organisationName,
+  parentStreamId,
+  parentStreamName,
+  subStreamId,
+  subStreamName,
 }: AddProjectModalProps) {
   const { form, isLoading, serverError, isSuccess, onSubmit, reset } =
-    useAddProject({ organisationId, organisationName });
+    useAddProject({
+      organisationId,
+      organisationName,
+      parentStreamId,
+      parentStreamName,
+      subStreamId,
+      subStreamName,
+    });
 
   const {
     register,

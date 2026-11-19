@@ -16,6 +16,12 @@ export interface CreateStreamRequestBody {
   leadId?: string;
   leadName?: string;
   type?: "department" | "project" | "empTracker";
+  subStreamId?: string;
+  subStreamName?: string;
+  substreamId?: string;
+  substreamName?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
 }
 
 export async function POST(req: Request) {
@@ -94,6 +100,28 @@ export async function POST(req: Request) {
           ]
         : [];
 
+    // 5b. Resolve parentStream and substream
+    const parentStreamId = body.parentStreamId?.trim();
+    const parentStreamName = body.parentStreamName?.trim();
+    const parentStream =
+      parentStreamId && parentStreamName
+        ? [{ parentStreamId, parentStreamName }]
+        : [];
+
+    const subStreamId = (body.subStreamId || body.substreamId)?.trim();
+    const subStreamName = (body.subStreamName || body.substreamName)?.trim();
+    const substream =
+      subStreamId && subStreamName
+        ? [
+            {
+              streamId: subStreamId,
+              streamName: subStreamName,
+              creatorId,
+              creatorName,
+            },
+          ]
+        : [];
+
     // 6. Create stream in database
     const newStream = await StreamModel.create({
       name: streamName,
@@ -105,9 +133,31 @@ export async function POST(req: Request) {
       lead,
       manager: [],
       members,
-      substream: [],
-      parentStream: [],
+      substream,
+      parentStream,
     });
+
+    // 6b. If parentStreamId is provided, link this new stream as a substream in parent
+    if (parentStreamId) {
+      try {
+        const parentFilter = mongoose.Types.ObjectId.isValid(parentStreamId)
+          ? { _id: new mongoose.Types.ObjectId(parentStreamId) }
+          : { _id: parentStreamId };
+
+        await StreamModel.updateOne(parentFilter, {
+          $addToSet: {
+            substream: {
+              streamId: newStream._id.toString(),
+              streamName: newStream.name,
+              creatorId,
+              creatorName,
+            },
+          },
+        });
+      } catch (parentErr) {
+        console.warn("Failed to update parent stream's substreams:", parentErr);
+      }
+    }
 
     // 7. Optional synchronization with OrganizationModel if organisationId is provided
     if (body.organisationId?.trim()) {

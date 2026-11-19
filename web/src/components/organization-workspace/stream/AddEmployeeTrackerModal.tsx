@@ -23,6 +23,10 @@ export interface AddEmployeeTrackerModalProps {
   onSuccess?: () => void;
   organisationId?: string;
   organisationName?: string;
+  parentStreamId?: string;
+  parentStreamName?: string;
+  subStreamId?: string;
+  subStreamName?: string;
 }
 
 export function AddEmployeeTrackerModal({
@@ -31,6 +35,10 @@ export function AddEmployeeTrackerModal({
   onSuccess,
   organisationId,
   organisationName,
+  parentStreamId,
+  parentStreamName,
+  subStreamId,
+  subStreamName,
 }: AddEmployeeTrackerModalProps) {
   const {
     filteredMembers,
@@ -45,6 +53,10 @@ export function AddEmployeeTrackerModal({
   } = useAddEmployeeTracker({
     organisationId,
     organisationName,
+    parentStreamId,
+    parentStreamName,
+    subStreamId,
+    subStreamName,
     onSuccess,
   });
 
