@@ -46,6 +46,8 @@ export interface IStream extends Document {
   manager: IStreamManager[];
   lead: IStreamLead[];
   parentStream: IParentStream[];
+  organisationId?: string;
+  organisationName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -202,6 +204,17 @@ const StreamSchema = new Schema<IStream>(
     parentStream: {
       type: [ParentStreamSchema],
       default: [],
+    },
+    organisationId: {
+      type: String,
+      trim: true,
+      index: true,
+      default: "",
+    },
+    organisationName: {
+      type: String,
+      trim: true,
+      default: "",
     },
   },
   {

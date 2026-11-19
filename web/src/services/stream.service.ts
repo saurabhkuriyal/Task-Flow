@@ -21,6 +21,59 @@ export interface StreamResponse {
   data?: unknown;
 }
 
+export interface StreamMemberItem {
+  memberId: string;
+  memberName: string;
+  assigneeId?: string;
+  assigneeName?: string;
+}
+
+export interface StreamLeadItem {
+  id: string;
+  name: string;
+}
+
+export interface StreamCreatorItem {
+  userId: string;
+  name: string;
+}
+
+export interface StreamManagerItem {
+  id: string;
+  name: string;
+}
+
+export interface StreamItem {
+  _id: string;
+  id?: string;
+  name: string;
+  type: "department" | "project" | "empTracker";
+  description?: string;
+  organisationId?: string;
+  organisationName?: string;
+  creator?: StreamCreatorItem[];
+  lead?: StreamLeadItem[];
+  manager?: StreamManagerItem[];
+  members?: StreamMemberItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface GetStreamsResponse {
+  success: boolean;
+  message?: string;
+  count?: number;
+  streams: StreamItem[];
+  stream?: StreamItem;
+}
+
+export interface UpdateStreamPayload {
+  streamId: string;
+  lead?: { id: string; name: string };
+  manager?: { id: string; name: string };
+  member?: { memberId: string; memberName: string };
+}
+
 class StreamService {
   /**
    * Creates a new stream (department, project, or employee tracker)
@@ -29,10 +82,7 @@ class StreamService {
     try {
       console.log("stream payload", payload);
 
-      const endpoint =
-        payload.type === "department"
-          ? "/api/streams/department"
-          : "/api/streams";
+      const endpoint = "/api/stream/createStream";
 
       const response = await axios.post<StreamResponse>(
         endpoint,
@@ -80,6 +130,81 @@ class StreamService {
     payload: CreateStreamPayload
   ): Promise<StreamResponse> {
     return this.createStream({ ...payload, type: "empTracker" });
+  }
+
+  /**
+   * Fetches streams for an organization with optional type filtering
+   */
+  async getStreams(
+    organisationId?: string,
+    type?: "department" | "project" | "empTracker"
+  ): Promise<GetStreamsResponse> {
+    try {
+      const response = await axios.get<GetStreamsResponse>(
+        "/api/stream/getStream",
+        {
+          params: { orgId: organisationId, type },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to fetch streams."
+        );
+      }
+      throw new Error("An unexpected error occurred while fetching streams.");
+    }
+  }
+
+  /**
+   * Fetches a single stream by id
+   */
+  async getStreamById(id: string): Promise<GetStreamsResponse> {
+    try {
+      const response = await axios.get<GetStreamsResponse>(
+        "/api/stream/getStream",
+        {
+          params: { id },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to fetch stream."
+        );
+      }
+      throw new Error("An unexpected error occurred while fetching stream.");
+    }
+  }
+
+  /**
+   * Updates stream lead, manager, or member
+   */
+  async updateStream(payload: UpdateStreamPayload): Promise<StreamResponse> {
+    try {
+      const response = await axios.post<StreamResponse>(
+        "/api/stream/updateStream",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to update stream."
+        );
+      }
+      throw new Error("An unexpected error occurred while updating stream.");
+    }
   }
 }
 

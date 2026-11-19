@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { AlertCircle } from "lucide-react";
 import { StreamToolbar } from "./StreamToolbar";
 import { StreamSections } from "./StreamSections";
 import { AddDepartmentModal } from "./AddDepartmentModal";
@@ -10,9 +11,16 @@ import { useStreams } from "@/hooks/stream";
 
 export function StreamView() {
   const {
+    departments,
+    projects,
+    empTrackers,
     searchTerm,
     setSearchTerm,
     isLoading,
+    error,
+    refetch,
+    currentOrgId,
+    currentOrgName,
     isAddDepartmentOpen,
     openAddDepartment,
     closeAddDepartment,
@@ -34,21 +42,47 @@ export function StreamView() {
         onAddEmployeeTracker={openAddEmployeeTracker}
       />
 
-      <StreamSections isLoading={isLoading} />
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <StreamSections
+        isLoading={isLoading}
+        departments={departments}
+        projects={projects}
+        empTrackers={empTrackers}
+        searchTerm={searchTerm}
+        orgId={currentOrgId}
+        onAddDepartment={openAddDepartment}
+        onAddProject={openAddProject}
+        onAddEmployeeTracker={openAddEmployeeTracker}
+      />
 
       <AddDepartmentModal
         isOpen={isAddDepartmentOpen}
         onClose={closeAddDepartment}
+        onSuccess={refetch}
+        organisationId={currentOrgId}
+        organisationName={currentOrgName}
       />
 
       <AddProjectModal
         isOpen={isAddProjectOpen}
         onClose={closeAddProject}
+        onSuccess={refetch}
+        organisationId={currentOrgId}
+        organisationName={currentOrgName}
       />
 
       <AddEmployeeTrackerModal
         isOpen={isAddEmployeeTrackerOpen}
         onClose={closeAddEmployeeTracker}
+        onSuccess={refetch}
+        organisationId={currentOrgId}
+        organisationName={currentOrgName}
       />
     </div>
   );

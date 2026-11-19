@@ -13,6 +13,8 @@ export interface AddDepartmentModalProps {
   onSuccess?: () => void;
   organisationId?: string;
   organisationName?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export function AddDepartmentModal({
@@ -21,6 +23,8 @@ export function AddDepartmentModal({
   onSuccess,
   organisationId,
   organisationName,
+  title,
+  subtitle,
 }: AddDepartmentModalProps) {
   const { form, isLoading, serverError, isSuccess, onSubmit, reset } =
     useAddDepartment({ organisationId, organisationName });
@@ -69,9 +73,11 @@ export function AddDepartmentModal({
               <Building2 className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground">Add Department</h2>
+              <h2 className="text-base font-bold text-foreground">
+                {title || "Add Department"}
+              </h2>
               <p className="text-xs text-muted-foreground">
-                Create a new department stream in your organization
+                {subtitle || "Create a new department stream in your organization"}
               </p>
             </div>
           </div>
