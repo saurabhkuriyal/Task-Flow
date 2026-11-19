@@ -21,14 +21,30 @@ export interface IParentStream {
   parentStreamName: string;
 }
 
+export interface IStreamCreator {
+  userId: string;
+  name: string;
+}
+
+export interface IStreamManager {
+  id: string;
+  name: string;
+}
+
+export interface IStreamLead {
+  id: string;
+  name: string;
+}
+
 export interface IStream extends Document {
   name: string;
   type: StreamType;
+  creator: IStreamCreator[];
   members: IStreamMember[];
   substream: ISubStream[];
   description?: string;
-  manager?: string;
-  lead?: string;
+  manager: IStreamManager[];
+  lead: IStreamLead[];
   parentStream: IParentStream[];
   createdAt: Date;
   updatedAt: Date;
@@ -98,6 +114,54 @@ const ParentStreamSchema = new Schema<IParentStream>(
   { _id: false }
 );
 
+const StreamCreatorSchema = new Schema<IStreamCreator>(
+  {
+    userId: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
+const StreamManagerSchema = new Schema<IStreamManager>(
+  {
+    id: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
+const StreamLeadSchema = new Schema<IStreamLead>(
+  {
+    id: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 const StreamSchema = new Schema<IStream>(
   {
     name: {
@@ -109,6 +173,10 @@ const StreamSchema = new Schema<IStream>(
       type: String,
       enum: ["project", "department", "empTracker"],
       required: [true, "Stream type is required"],
+    },
+    creator: {
+      type: [StreamCreatorSchema],
+      default: [],
     },
     members: {
       type: [StreamMemberSchema],
@@ -124,12 +192,12 @@ const StreamSchema = new Schema<IStream>(
       default: "",
     },
     manager: {
-      type: String,
-      trim: true,
+      type: [StreamManagerSchema],
+      default: [],
     },
     lead: {
-      type: String,
-      trim: true,
+      type: [StreamLeadSchema],
+      default: [],
     },
     parentStream: {
       type: [ParentStreamSchema],

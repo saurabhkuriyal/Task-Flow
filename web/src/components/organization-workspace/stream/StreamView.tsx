@@ -3,6 +3,9 @@
 import * as React from "react";
 import { StreamToolbar } from "./StreamToolbar";
 import { StreamSections } from "./StreamSections";
+import { AddDepartmentModal } from "./AddDepartmentModal";
+import { AddProjectModal } from "./AddProjectModal";
+import { AddEmployeeTrackerModal } from "./AddEmployeeTrackerModal";
 import { useStreams } from "@/hooks/stream";
 
 export function StreamView() {
@@ -10,9 +13,15 @@ export function StreamView() {
     searchTerm,
     setSearchTerm,
     isLoading,
-    handleAddDepartment,
-    handleAddProject,
-    handleAddEmployeeTracker,
+    isAddDepartmentOpen,
+    openAddDepartment,
+    closeAddDepartment,
+    isAddProjectOpen,
+    openAddProject,
+    closeAddProject,
+    isAddEmployeeTrackerOpen,
+    openAddEmployeeTracker,
+    closeAddEmployeeTracker,
   } = useStreams();
 
   return (
@@ -20,12 +29,27 @@ export function StreamView() {
       <StreamToolbar
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onAddDepartment={handleAddDepartment}
-        onAddProject={handleAddProject}
-        onAddEmployeeTracker={handleAddEmployeeTracker}
+        onAddDepartment={openAddDepartment}
+        onAddProject={openAddProject}
+        onAddEmployeeTracker={openAddEmployeeTracker}
       />
 
       <StreamSections isLoading={isLoading} />
+
+      <AddDepartmentModal
+        isOpen={isAddDepartmentOpen}
+        onClose={closeAddDepartment}
+      />
+
+      <AddProjectModal
+        isOpen={isAddProjectOpen}
+        onClose={closeAddProject}
+      />
+
+      <AddEmployeeTrackerModal
+        isOpen={isAddEmployeeTrackerOpen}
+        onClose={closeAddEmployeeTracker}
+      />
     </div>
   );
 }
