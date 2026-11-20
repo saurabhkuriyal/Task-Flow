@@ -89,15 +89,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const userOrganisations =
-      targetOrgId && targetOrgName
-        ? [
-            {
-              organisationId: targetOrgId,
-              organisationName: targetOrgName,
-            },
-          ]
-        : [];
+    const userOrganisations = targetOrgId ? [{ organisationId: targetOrgId }] : [];
 
     // Save user to database
     const newUser = await UserModel.create({
@@ -136,10 +128,15 @@ export async function POST(req: Request) {
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
         role: newUser.role,
-        organisations: newUser.organisations?.map((org) => ({
-          organisationId: org.organisationId,
-          organisationName: org.organisationName,
-        })),
+        organisations:
+          targetOrgId && targetOrgName
+            ? [
+                {
+                  organisationId: targetOrgId,
+                  organisationName: targetOrgName,
+                },
+              ]
+            : [],
       },
     };
 

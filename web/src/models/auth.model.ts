@@ -2,29 +2,24 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface ICreatedOrganisation {
   createdOrganisationId: string;
-  createdOrganisationName: string;
 }
 
 export interface IUserOrganisation {
   organisationId: string;
-  organisationName: string;
 }
 
-export interface IUserDepartment {
-  departmentId: string;
-  departmentName: string;
+export interface IUserStream {
+  streamId: string;
 }
 
 export interface IUserLedOf {
-  organisationId: string;
-  organisationName: string;
+  streamId?: string;
+  organisationId?: string;
 }
 
 export interface IUserManagerOf {
   organisationId: string;
-  organisationName: string;
-  departmentId: string;
-  departmentName: string;
+  streamId: string;
 }
 
 export interface IUser extends Document {
@@ -36,7 +31,8 @@ export interface IUser extends Document {
   status?: "active" | "inactive" | string;
   createdOrganisations?: ICreatedOrganisation[];
   organisations?: IUserOrganisation[];
-  departments?: IUserDepartment[];
+  streams?: IUserStream[];
+  departments?: IUserStream[]; // Optional legacy alias for streams
   ledOf?: IUserLedOf[];
   managerOf?: IUserManagerOf[];
   createdAt: Date;
@@ -79,55 +75,61 @@ const UserSchema = new Schema<IUser>(
     },
     createdOrganisations: [
       {
+        _id: false,
         createdOrganisationId: {
-          type: String,
-        },
-        createdOrganisationName: {
-          type: String,
+          type: Schema.Types.ObjectId,
+          ref: "Organization",
         },
       },
     ],
-    organisations: [{
-      organisationId: {
-        type: String,
+    organisations: [
+      {
+        _id: false,
+        organisationId: {
+          type: Schema.Types.ObjectId,
+          ref: "Organization",
+        },
       },
-      organisationName: {
-        type: String,
+    ],
+    streams: [
+      {
+        _id: false,
+        streamId: {
+          type: Schema.Types.ObjectId,
+          ref: "Stream",
+        },
       },
-    }],
-    departments: [{
-      departmentId: {
-        type: String,
+    ],
+    ledOf: [
+      {
+        _id: false,
+        streamId: {
+          type: Schema.Types.ObjectId,
+          ref: "Stream",
+        },
+        organisationId: {
+          type: Schema.Types.ObjectId,
+          ref: "Organization",
+        },
       },
-      departmentName: {
-        type: String,
+    ],
+    managerOf: [
+      {
+        _id: false,
+        organisationId: {
+          type: Schema.Types.ObjectId,
+          ref: "Organization",
+        },
+        streamId: {
+          type: Schema.Types.ObjectId,
+          ref: "Stream",
+        },
       },
-    }],
-    ledOf: [{
-      organisationId: {
-        type: String,
-      },
-      organisationName: {
-        type: String,
-      },
-    }],
-    managerOf: [{
-      organisationId: {
-        type: String,
-      },
-      organisationName: {
-        type: String,
-      },
-      departmentId: {
-        type: String,
-      },
-      departmentName: {
-        type: String,
-      },
-    }],
+    ],
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 
@@ -135,7 +137,9 @@ const UserSchema = new Schema<IUser>(
 if (
   mongoose.models.User &&
   (!mongoose.models.User.schema.paths["createdOrganisations"] ||
-    !mongoose.models.User.schema.paths["LedOf"] ||
+    !mongoose.models.User.schema.paths["streams"] ||
+    !mongoose.models.User.schema.paths["ledOf"] ||
+    !mongoose.models.User.schema.paths["managerOf"] ||
     !mongoose.models.User.schema.paths["role"])
 ) {
   delete (mongoose.models as Record<string, unknown>).User;

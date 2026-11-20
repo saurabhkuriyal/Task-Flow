@@ -71,15 +71,10 @@ export function useAddDepartment(options?: UseAddDepartmentOptions) {
         name: data.name.trim(),
         description: data.description.trim(),
         organisationId: currentOrgId,
-        organisationName: currentOrgName,
         creatorId: currentCreatorId,
-        creatorName: currentCreatorName,
         leadId: options?.leadId,
-        leadName: options?.leadName,
         subStreamId: options?.subStreamId || options?.substreamId,
-        subStreamName: options?.subStreamName || options?.substreamName,
         parentStreamId: options?.parentStreamId,
-        parentStreamName: options?.parentStreamName,
         type: "department",
       };
 

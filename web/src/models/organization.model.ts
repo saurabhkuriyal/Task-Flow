@@ -1,31 +1,33 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IMember {
-  memberId: string;
-  name: string;
+  memberId: string | mongoose.Types.ObjectId;
+  name?: string;
 }
 
+export interface IStreamRef {
+  streamId: string | mongoose.Types.ObjectId;
+}
+
+// Deprecated legacy alias for streams
 export interface IDepartment {
-  departmentId: string;
-  departmentName: string;
+  departmentId?: string | mongoose.Types.ObjectId;
+  streamId?: string | mongoose.Types.ObjectId;
+  departmentName?: string;
   head?: string;
 }
 
 export interface IProject {
-  projectId: string;
-  name: string;
+  projectId: string | mongoose.Types.ObjectId;
+  name?: string;
   lead?: string;
-}
-
-export interface IEmployee {
-  empId: string;
-  name: string;
 }
 
 export interface IOrganization extends Document {
   ownerId: mongoose.Types.ObjectId | string;
   members: IMember[];
-  departments: IDepartment[];
+  streams: IStreamRef[];
+  departments?: (IStreamRef | IDepartment)[]; // Legacy alias
   projects: IProject[];
   organizationName: string;
   gstNo: string;
@@ -33,7 +35,7 @@ export interface IOrganization extends Document {
   teamSize: number;
   arr: number;
   mrr: number;
-  employees: IEmployee[];
+  employees?: unknown[]; // Deprecated, removed from schema
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,41 +43,21 @@ export interface IOrganization extends Document {
 const MemberSchema = new Schema<IMember>(
   {
     memberId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
     },
   },
   { _id: false }
 );
 
-const DepartmentSchema = new Schema<IDepartment>(
+const StreamRefSchema = new Schema<IStreamRef>(
   {
-    departmentId: {
-      type: String,
+    streamId: {
+      type: Schema.Types.ObjectId,
+      ref: "Stream",
       required: true,
-      trim: true,
     },
-    departmentName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    head: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-    // project: {
-    //   type: String,
-    //   trim: true,
-    //   default: "",
-    // },
   },
   { _id: false }
 );
@@ -83,35 +65,9 @@ const DepartmentSchema = new Schema<IDepartment>(
 const ProjectSchema = new Schema<IProject>(
   {
     projectId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Stream",
       required: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    lead: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-  },
-  { _id: false }
-);
-
-const EmployeeSchema = new Schema<IEmployee>(
-  {
-    empId: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
     },
   },
   { _id: false }
@@ -120,15 +76,16 @@ const EmployeeSchema = new Schema<IEmployee>(
 const OrganizationSchema = new Schema<IOrganization>(
   {
     ownerId: {
-      type: Schema.Types.Mixed,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: [true, "Owner ID is required"],
     },
     members: {
       type: [MemberSchema],
       default: [],
     },
-    departments: {
-      type: [DepartmentSchema],
+    streams: {
+      type: [StreamRefSchema],
       default: [],
     },
     projects: {
@@ -152,7 +109,6 @@ const OrganizationSchema = new Schema<IOrganization>(
     },
     teamSize: {
       type: Number,
-      // required: [true, "Team size is required"],
       default: 1,
     },
     arr: {
@@ -163,21 +119,25 @@ const OrganizationSchema = new Schema<IOrganization>(
       type: Number,
       default: 0,
     },
-    employees: {
-      type: [EmployeeSchema],
-      default: [],
-    },
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 
-// Prevent model recompilation in Next.js hot-reload environment
+// Prevent model recompilation in Next.js hot-reload environment and ensure schema updates
+if (
+  mongoose.models.Organization &&
+  (!mongoose.models.Organization.schema.paths["streams"] ||
+    mongoose.models.Organization.schema.paths["employees"])
+) {
+  delete (mongoose.models as Record<string, unknown>).Organization;
+}
+
 const OrganizationModel: Model<IOrganization> =
   (mongoose.models.Organization as Model<IOrganization>) ||
   mongoose.model<IOrganization>("Organization", OrganizationSchema);
 
 export { OrganizationModel };
 export default OrganizationModel;
-

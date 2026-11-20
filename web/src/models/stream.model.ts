@@ -3,37 +3,37 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 export type StreamType = "project" | "department" | "empTracker";
 
 export interface IStreamMember {
-  memberId: string;
-  memberName: string;
-  assigneeId?: string;
+  memberId: string | mongoose.Types.ObjectId;
+  memberName?: string;
+  assigneeId?: string | mongoose.Types.ObjectId;
   assigneeName?: string;
 }
 
 export interface ISubStream {
-  streamId: string;
-  streamName: string;
-  creatorId?: string;
+  streamId: string | mongoose.Types.ObjectId;
+  streamName?: string;
+  creatorId?: string | mongoose.Types.ObjectId;
   creatorName?: string;
 }
 
 export interface IParentStream {
-  parentStreamId: string;
-  parentStreamName: string;
+  parentStreamId: string | mongoose.Types.ObjectId;
+  parentStreamName?: string;
 }
 
 export interface IStreamCreator {
-  userId: string;
-  name: string;
+  userId: string | mongoose.Types.ObjectId;
+  name?: string;
 }
 
 export interface IStreamManager {
-  id: string;
-  name: string;
+  id: string | mongoose.Types.ObjectId;
+  name?: string;
 }
 
 export interface IStreamLead {
-  id: string;
-  name: string;
+  id: string | mongoose.Types.ObjectId;
+  name?: string;
 }
 
 export interface IStream extends Document {
@@ -46,7 +46,7 @@ export interface IStream extends Document {
   manager: IStreamManager[];
   lead: IStreamLead[];
   parentStream: IParentStream[];
-  organisationId?: string;
+  organisationId: mongoose.Types.ObjectId | string;
   organisationName?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -55,22 +55,13 @@ export interface IStream extends Document {
 const StreamMemberSchema = new Schema<IStreamMember>(
   {
     memberId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
-    },
-    memberName: {
-      type: String,
-      required: true,
-      trim: true,
     },
     assigneeId: {
-      type: String,
-      trim: true,
-    },
-    assigneeName: {
-      type: String,
-      trim: true,
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   { _id: false }
@@ -79,22 +70,13 @@ const StreamMemberSchema = new Schema<IStreamMember>(
 const SubStreamSchema = new Schema<ISubStream>(
   {
     streamId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Stream",
       required: true,
-      trim: true,
-    },
-    streamName: {
-      type: String,
-      required: true,
-      trim: true,
     },
     creatorId: {
-      type: String,
-      trim: true,
-    },
-    creatorName: {
-      type: String,
-      trim: true,
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   { _id: false }
@@ -103,14 +85,9 @@ const SubStreamSchema = new Schema<ISubStream>(
 const ParentStreamSchema = new Schema<IParentStream>(
   {
     parentStreamId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Stream",
       required: true,
-      trim: true,
-    },
-    parentStreamName: {
-      type: String,
-      required: true,
-      trim: true,
     },
   },
   { _id: false }
@@ -119,14 +96,9 @@ const ParentStreamSchema = new Schema<IParentStream>(
 const StreamCreatorSchema = new Schema<IStreamCreator>(
   {
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
     },
   },
   { _id: false }
@@ -135,14 +107,9 @@ const StreamCreatorSchema = new Schema<IStreamCreator>(
 const StreamManagerSchema = new Schema<IStreamManager>(
   {
     id: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
     },
   },
   { _id: false }
@@ -151,14 +118,9 @@ const StreamManagerSchema = new Schema<IStreamManager>(
 const StreamLeadSchema = new Schema<IStreamLead>(
   {
     id: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
     },
   },
   { _id: false }
@@ -206,23 +168,26 @@ const StreamSchema = new Schema<IStream>(
       default: [],
     },
     organisationId: {
-      type: String,
-      trim: true,
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: [true, "Organisation ID is required"],
       index: true,
-      default: "",
-    },
-    organisationName: {
-      type: String,
-      trim: true,
-      default: "",
     },
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 
-// Prevent model recompilation in Next.js hot-reload environment
+// Prevent model recompilation in Next.js hot-reload environment and ensure schema updates
+if (
+  mongoose.models.Stream &&
+  mongoose.models.Stream.schema.paths["organisationName"]
+) {
+  delete (mongoose.models as Record<string, unknown>).Stream;
+}
+
 const StreamModel: Model<IStream> =
   (mongoose.models.Stream as Model<IStream>) ||
   mongoose.model<IStream>("Stream", StreamSchema);

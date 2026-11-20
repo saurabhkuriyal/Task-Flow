@@ -70,7 +70,6 @@ export function useAddMember(
         password: data.createPasscode,
         role: "employee",
         organisationId: currentOrgId,
-        organisationName: currentOrgName,
       };
 
       const response = await authService.signup(payload);

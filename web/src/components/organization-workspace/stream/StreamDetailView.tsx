@@ -77,6 +77,8 @@ export function StreamDetailView() {
     }
   };
 
+  const isEmpTracker = stream?.type === "empTracker";
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return null;
     try {
@@ -215,53 +217,57 @@ export function StreamDetailView() {
             </div>
           ) : (
             <>
-              {/* Option to Add Members */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={openAddMember}
-                className="text-xs h-8 cursor-pointer gap-1.5"
-              >
-                <UserPlus className="h-3.5 w-3.5 text-primary" />
-                <span>Add Member</span>
-              </Button>
+              {!isEmpTracker && (
+                <>
+                  {/* Option to Add Members */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddMember}
+                    className="text-xs h-8 cursor-pointer gap-1.5"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 text-primary" />
+                    <span>Add Member</span>
+                  </Button>
 
-              {/* Button to Add Lead */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={openAddLead}
-                className="text-xs h-8 cursor-pointer gap-1.5"
-              >
-                <UserCheck className="h-3.5 w-3.5 text-primary" />
-                <span>Add Lead</span>
-              </Button>
+                  {/* Button to Add Lead */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddLead}
+                    className="text-xs h-8 cursor-pointer gap-1.5"
+                  >
+                    <UserCheck className="h-3.5 w-3.5 text-primary" />
+                    <span>Add Lead</span>
+                  </Button>
 
-              {/* Button to Add Manager */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={openAddManager}
-                className="text-xs h-8 cursor-pointer gap-1.5"
-              >
-                <UserCog className="h-3.5 w-3.5 text-primary" />
-                <span>Add Manager</span>
-              </Button>
+                  {/* Button to Add Manager */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddManager}
+                    className="text-xs h-8 cursor-pointer gap-1.5"
+                  >
+                    <UserCog className="h-3.5 w-3.5 text-primary" />
+                    <span>Add Manager</span>
+                  </Button>
 
-              {/* Add Sub-department */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={openAddSubDepartment}
-                className="text-xs h-8 cursor-pointer gap-1.5"
-              >
-                <Building2 className="h-3.5 w-3.5 text-primary" />
-                <span>Add Sub-department</span>
-              </Button>
+                  {/* Add Sub-department */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddSubDepartment}
+                    className="text-xs h-8 cursor-pointer gap-1.5"
+                  >
+                    <Building2 className="h-3.5 w-3.5 text-primary" />
+                    <span>Add Sub-department</span>
+                  </Button>
+                </>
+              )}
 
               {/* Add Project */}
               <Button

@@ -4,9 +4,9 @@ export interface CreateStreamPayload {
   name: string;
   description: string;
   organisationId: string;
-  organisationName: string;
   creatorId: string;
-  creatorName: string;
+  organisationName?: string;
+  creatorName?: string;
   leadId?: string;
   leadName?: string;
   type?: "department" | "project" | "empTracker";
@@ -168,7 +168,7 @@ class StreamService {
   async getStreamById(id: string): Promise<GetStreamsResponse> {
     try {
       const response = await axios.get<GetStreamsResponse>(
-        "/api/stream/getStream",
+        "/api/stream/getStreamById",
         {
           params: { id },
         }

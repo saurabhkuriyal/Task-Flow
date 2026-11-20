@@ -55,6 +55,8 @@ export function useSignup() {
 
       const response = await authService.signup(payload);
 
+      console.log("siignup response ", response);
+
       if (response.success) {
         setIsSuccess(true);
         // Redirect to signin with a success query param or directly to workspaces

@@ -69,15 +69,9 @@ export function useAddProject(options?: UseAddProjectOptions) {
         name: data.name.trim(),
         description: data.description.trim(),
         organisationId: currentOrgId,
-        organisationName: currentOrgName,
         creatorId: currentCreatorId,
-        creatorName: currentCreatorName,
-        leadId: "",
-        leadName: "",
         subStreamId: options?.subStreamId || options?.substreamId,
-        subStreamName: options?.subStreamName || options?.substreamName,
         parentStreamId: options?.parentStreamId,
-        parentStreamName: options?.parentStreamName,
         type: "project",
       };
 

@@ -106,15 +106,10 @@ export function useAddEmployeeTracker(options?: UseAddEmployeeTrackerOptions) {
           name: memberName,
           description: "",
           leadId: memberId,
-          leadName: memberName,
           organisationId: currentOrgId,
-          organisationName: currentOrgName,
           creatorId: currentCreatorId,
-          creatorName: currentCreatorName,
           subStreamId: options?.subStreamId || options?.substreamId,
-          subStreamName: options?.subStreamName || options?.substreamName,
           parentStreamId: options?.parentStreamId,
-          parentStreamName: options?.parentStreamName,
           type: "empTracker",
         };
 
@@ -140,9 +135,7 @@ export function useAddEmployeeTracker(options?: UseAddEmployeeTrackerOptions) {
     },
     [
       currentOrgId,
-      currentOrgName,
       currentCreatorId,
-      currentCreatorName,
       options,
     ]
   );

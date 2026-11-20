@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import dbConnect from "@/utils/db";
 import { StreamModel } from "@/models/stream.model";
 import { OrganizationModel } from "@/models/organization.model";
+import UserModel from "@/models/auth.model";
 import { verifyToken } from "@/lib/auth";
 
 export interface CreateStreamRequestBody {
@@ -49,7 +50,6 @@ export async function POST(req: Request) {
 
     // 3. Resolve creator information
     let creatorId = body.creatorId?.trim() || "";
-    let creatorName = body.creatorName?.trim() || "";
 
     if (!creatorId) {
       try {
@@ -64,63 +64,37 @@ export async function POST(req: Request) {
           ) {
             creatorId = payload.id;
           }
-          if (payload?.name && typeof payload.name === "string") {
-            creatorName = payload.name;
-          }
         }
       } catch {
         // Token verification failed or not provided; continue with resolved creator
       }
     }
 
-    const creator = creatorId
-      ? [{ userId: creatorId, name: creatorName || "Creator" }]
-      : [];
+    const creator = creatorId ? [{ userId: creatorId }] : [];
 
     // 4. Resolve lead information
-    const lead =
-      body.leadId?.trim()
-        ? [
-            {
-              id: body.leadId.trim(),
-              name: body.leadName?.trim() || "",
-            },
-          ]
-        : [];
+    const lead = body.leadId?.trim() ? [{ id: body.leadId.trim() }] : [];
 
     // 5. Resolve members
     // For empTracker, include the tracked employee as an initial member
     const members =
       streamType === "empTracker" && body.leadId?.trim()
-        ? [
-            {
-              memberId: body.leadId.trim(),
-              memberName: body.leadName?.trim() || streamName,
-            },
-          ]
+        ? [{ memberId: body.leadId.trim() }]
         : [];
 
     // 5b. Resolve parentStream and substream
     const parentStreamId = body.parentStreamId?.trim();
-    const parentStreamName = body.parentStreamName?.trim();
-    const parentStream =
-      parentStreamId && parentStreamName
-        ? [{ parentStreamId, parentStreamName }]
-        : [];
+    const parentStream = parentStreamId ? [{ parentStreamId }] : [];
 
     const subStreamId = (body.subStreamId || body.substreamId)?.trim();
-    const subStreamName = (body.subStreamName || body.substreamName)?.trim();
-    const substream =
-      subStreamId && subStreamName
-        ? [
-            {
-              streamId: subStreamId,
-              streamName: subStreamName,
-              creatorId,
-              creatorName,
-            },
-          ]
-        : [];
+    const substream = subStreamId
+      ? [
+          {
+            streamId: subStreamId,
+            ...(creatorId ? { creatorId } : {}),
+          },
+        ]
+      : [];
 
     // 6. Create stream in database
     const newStream = await StreamModel.create({
@@ -128,7 +102,6 @@ export async function POST(req: Request) {
       type: streamType,
       description: body.description?.trim() || "",
       organisationId: body.organisationId?.trim() || "",
-      organisationName: body.organisationName?.trim() || "",
       creator,
       lead,
       manager: [],
@@ -148,9 +121,7 @@ export async function POST(req: Request) {
           $addToSet: {
             substream: {
               streamId: newStream._id.toString(),
-              streamName: newStream.name,
-              creatorId,
-              creatorName,
+              ...(creatorId ? { creatorId } : {}),
             },
           },
         });
@@ -170,10 +141,8 @@ export async function POST(req: Request) {
         if (streamType === "department") {
           await OrganizationModel.updateOne(orgFilter, {
             $push: {
-              departments: {
-                departmentId: newStream._id.toString(),
-                departmentName: newStream.name,
-                head: body.leadName?.trim() || "",
+              streams: {
+                streamId: newStream._id.toString(),
               },
             },
           });
@@ -182,14 +151,35 @@ export async function POST(req: Request) {
             $push: {
               projects: {
                 projectId: newStream._id.toString(),
-                name: newStream.name,
-                lead: body.leadName?.trim() || "",
               },
             },
           });
         }
       } catch (orgError) {
         console.warn("Failed to synchronize stream to organization:", orgError);
+      }
+    }
+
+    // 8. Update UserModel: add stream ID to user's streams array
+    const usersToUpdate = new Set<string>();
+    if (creatorId) usersToUpdate.add(creatorId);
+    if (body.leadId?.trim()) usersToUpdate.add(body.leadId.trim());
+
+    for (const uId of usersToUpdate) {
+      try {
+        const userFilter = mongoose.Types.ObjectId.isValid(uId)
+          ? { _id: new mongoose.Types.ObjectId(uId) }
+          : { _id: uId };
+
+        await UserModel.updateOne(userFilter, {
+          $addToSet: {
+            streams: {
+              streamId: newStream._id.toString(),
+            },
+          },
+        });
+      } catch (userErr) {
+        console.warn(`Failed to update streams array for user ${uId}:`, userErr);
       }
     }
 

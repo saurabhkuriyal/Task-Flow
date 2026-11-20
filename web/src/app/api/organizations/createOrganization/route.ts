@@ -12,9 +12,8 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    // 1. Resolve ownerId and owner name from auth token cookie or request body
+    // 1. Resolve ownerId from auth token cookie or request body
     let ownerId = body.ownerId;
-    let ownerName = body.ownerName || "Owner";
     let ownerEmail = "";
 
     try {
@@ -29,9 +28,6 @@ export async function POST(req: Request) {
         ) {
           ownerId = payload.id;
         }
-        if (payload?.name && typeof payload.name === "string") {
-          ownerName = payload.name;
-        }
         if (payload?.email && typeof payload.email === "string") {
           ownerEmail = payload.email.toLowerCase().trim();
         }
@@ -45,7 +41,6 @@ export async function POST(req: Request) {
       const userByEmail = await UserModel.findOne({ email: ownerEmail });
       if (userByEmail) {
         ownerId = userByEmail._id.toString();
-        ownerName = userByEmail.name || ownerName;
       }
     } else if (
       (!ownerId || !mongoose.Types.ObjectId.isValid(ownerId)) &&
@@ -106,10 +101,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Initialize default members and employees with the creating owner
-    const members = [{ memberId: String(ownerId), name: ownerName }];
-    const employees = [{ empId: String(ownerId), name: ownerName }];
-    const departments: Record<string, unknown>[] = [];
+    // 4. Initialize default members with the creating owner (no duplicate name stored)
+    const members = [{ memberId: String(ownerId) }];
+    const streams: Record<string, unknown>[] = [];
     const projects: Record<string, unknown>[] = [];
 
     // 5. Create new organization document in MongoDB
@@ -122,8 +116,7 @@ export async function POST(req: Request) {
       arr,
       mrr,
       members,
-      employees,
-      departments,
+      streams,
       projects,
     });
 
@@ -131,11 +124,9 @@ export async function POST(req: Request) {
     let updatedUser = null;
     try {
       const orgId = newOrganization._id.toString();
-      const orgName = newOrganization.organizationName;
 
       const createdOrgItem = {
         createdOrganisationId: orgId,
-        createdOrganisationName: orgName,
       };
 
       const userUpdateQuery = {
@@ -143,7 +134,6 @@ export async function POST(req: Request) {
           createdOrganisations: createdOrgItem,
           organisations: {
             organisationId: orgId,
-            organisationName: orgName,
           },
         },
       };
@@ -169,7 +159,7 @@ export async function POST(req: Request) {
         "[createOrganization] User updated in MongoDB successfully:",
         updatedUser?._id,
         "Org:",
-        orgName
+        newOrganization.organizationName
       );
     } catch (err) {
       console.error("[createOrganization] Error updating user in MongoDB:", err);
