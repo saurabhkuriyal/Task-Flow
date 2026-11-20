@@ -1,7 +1,6 @@
 export * from "./StreamToolbar";
 export * from "./StreamSections";
 export * from "./StreamView";
-export * from "./StreamDetailView";
 export * from "./AddDepartmentModal";
 export * from "./AddProjectModal";
 export * from "./AddEmployeeTrackerModal";

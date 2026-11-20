@@ -1,4 +1,4 @@
-import { StreamDetailView } from "@/components/organization-workspace/stream";
+import { SpecificStreamView } from "@/components/organization-workspace/specificStream";
 
 export const metadata = {
   title: "Stream Detail | TaskFlow",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function StreamDetailPage() {
-  return <StreamDetailView />;
+  return <SpecificStreamView />;
 }

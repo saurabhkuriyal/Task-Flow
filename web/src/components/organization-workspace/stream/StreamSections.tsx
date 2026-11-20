@@ -123,6 +123,7 @@ export function StreamSections({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {departments.map((dept) => {
               const leadName = dept.lead?.[0]?.name;
+              const creatorName = dept.creator?.[0]?.name;
               const dateCreated = formatDate(dept.createdAt);
               const streamId = dept._id || dept.id || dept.name;
               const streamHref = currentOrgId
@@ -169,7 +170,12 @@ export function StreamSections({
                           <span className="truncate">Lead: {leadName}</span>
                         </>
                       ) : (
-                        <span className="text-muted-foreground/60">No lead assigned</span>
+                        <span className="text-muted-foreground/60">No lead</span>
+                      )}
+                      {creatorName && (
+                        <span className="text-muted-foreground/60 truncate">
+                          • By: {creatorName}
+                        </span>
                       )}
                     </div>
                     {dateCreated && (
@@ -265,6 +271,7 @@ export function StreamSections({
             {projects.map((proj) => {
               const dateCreated = formatDate(proj.createdAt);
               const creatorName = proj.creator?.[0]?.name;
+              const leadName = proj.lead?.[0]?.name;
               const streamId = proj._id || proj.id || proj.name;
               const streamHref = currentOrgId
                 ? `/organizations/${currentOrgId}/streams/${streamId}`
@@ -304,13 +311,18 @@ export function StreamSections({
 
                   <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/50 text-[11px] text-muted-foreground">
                     <div className="flex items-center gap-1.5 truncate">
-                      {creatorName ? (
+                      {leadName ? (
                         <>
                           <User className="h-3 w-3 shrink-0 text-muted-foreground/80" />
-                          <span className="truncate">By: {creatorName}</span>
+                          <span className="truncate">Lead: {leadName}</span>
                         </>
                       ) : (
-                        <span className="text-muted-foreground/60">Active project</span>
+                        <span className="text-muted-foreground/60">No lead</span>
+                      )}
+                      {creatorName && (
+                        <span className="text-muted-foreground/60 truncate">
+                          • By: {creatorName}
+                        </span>
                       )}
                     </div>
                     {dateCreated && (
@@ -409,6 +421,7 @@ export function StreamSections({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {empTrackers.map((emp) => {
               const employeeName = emp.lead?.[0]?.name || emp.name;
+              const creatorName = emp.creator?.[0]?.name;
               const dateCreated = formatDate(emp.createdAt);
 
               const streamId = emp._id || emp.id || emp.name;
@@ -423,21 +436,31 @@ export function StreamSections({
                   className="group relative flex items-center justify-between p-3.5 rounded-xl border border-border/70 bg-card hover:border-primary/50 hover:shadow-md transition-all text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-semibold text-emerald-600">
                       {getInitials(employeeName)}
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs sm:text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                         {employeeName}
                       </p>
-                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3 shrink-0 text-muted-foreground/70" />
-                        <span>Tracked {dateCreated ? `since ${dateCreated}` : ""}</span>
-                      </p>
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                        {creatorName && (
+                          <span className="text-muted-foreground/80">
+                            By: {creatorName}
+                          </span>
+                        )}
+                        {creatorName && dateCreated && <span>•</span>}
+                        {dateCreated && (
+                          <span className="flex items-center gap-1 text-muted-foreground/70">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            <span>Since {dateCreated}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <Badge variant="outline" className="text-[10px] uppercase shrink-0 ml-2">
+                  <Badge variant="outline" className="text-[10px] uppercase shrink-0 ml-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
                     Active
                   </Badge>
                 </Link>
