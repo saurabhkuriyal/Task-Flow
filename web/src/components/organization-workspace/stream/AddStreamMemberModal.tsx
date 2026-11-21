@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { userService } from "@/services/user.service";
-import { streamService } from "@/services/stream.service";
-import type { User } from "@/types/auth";
+import { useAddStreamMember } from "@/hooks/stream/useAddStreamMember";
 
 export interface AddStreamMemberModalProps {
   isOpen: boolean;
@@ -31,98 +29,23 @@ export function AddStreamMemberModal({
   title,
   subtitle,
 }: AddStreamMemberModalProps) {
-  const [members, setMembers] = React.useState<User[]>([]);
-  const [isLoadingMembers, setIsLoadingMembers] = React.useState(true);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isSuccess, setIsSuccess] = React.useState(false);
-  const [successMessage, setSuccessMessage] = React.useState("");
-
-  React.useEffect(() => {
-    if (!isOpen || !organisationId) return;
-
-    let isCancelled = false;
-
-    async function fetchMembers() {
-      setIsLoadingMembers(true);
-      try {
-        const res = await userService.getUsers(organisationId);
-        if (!isCancelled) {
-          if (res.success && Array.isArray(res.users)) {
-            setMembers(res.users);
-          } else {
-            setMembers([]);
-          }
-          setIsLoadingMembers(false);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          console.error("Failed to fetch organization members:", err);
-          setMembers([]);
-          setIsLoadingMembers(false);
-        }
-      }
-    }
-
-    fetchMembers();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [isOpen, organisationId]);
-
-  const filteredMembers = React.useMemo(() => {
-    if (!searchTerm.trim()) return members;
-    const term = searchTerm.toLowerCase();
-    return members.filter(
-      (m) =>
-        m.name?.toLowerCase().includes(term) ||
-        m.email?.toLowerCase().includes(term) ||
-        m.role?.toLowerCase().includes(term)
-    );
-  }, [members, searchTerm]);
-
-  const handleSelectMember = async (member: User) => {
-    const memberId = member.id || member._id || "";
-    const memberName = member.name || "User";
-
-    setIsSubmitting(true);
-
-    if (streamId) {
-      try {
-        if (role === "lead") {
-          await streamService.updateStream({
-            streamId,
-            lead: { id: memberId, name: memberName },
-          });
-        } else if (role === "manager") {
-          await streamService.updateStream({
-            streamId,
-            manager: { id: memberId, name: memberName },
-          });
-        } else {
-          await streamService.updateStream({
-            streamId,
-            member: { memberId, memberName },
-          });
-        }
-      } catch (err) {
-        console.error("Failed to update stream member/role:", err);
-      }
-    }
-
-    const roleLabel =
-      role === "lead" ? "Lead" : role === "manager" ? "Manager" : "Member";
-    setSuccessMessage(`${memberName} assigned as ${roleLabel}!`);
-    setIsSuccess(true);
-    setIsSubmitting(false);
-
-    setTimeout(() => {
-      setIsSuccess(false);
-      onSuccess?.();
-      onClose();
-    }, 1000);
-  };
+  const {
+    filteredMembers,
+    isLoadingMembers,
+    searchTerm,
+    setSearchTerm,
+    isSubmitting,
+    isSuccess,
+    successMessage,
+    handleSelectMember,
+  } = useAddStreamMember({
+    isOpen,
+    onClose,
+    onSuccess,
+    organisationId,
+    streamId,
+    role,
+  });
 
   const getInitials = (name?: string, email?: string) => {
     if (name) {

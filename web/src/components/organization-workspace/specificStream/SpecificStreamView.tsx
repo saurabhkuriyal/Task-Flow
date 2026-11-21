@@ -29,8 +29,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useStreamDetail } from "@/hooks/stream/useStreamDetail";
 import {
-  AddDepartmentModal,
-  AddProjectModal,
   AddEmployeeTrackerModal,
   AddStreamMemberModal,
 } from "../stream";
@@ -54,12 +52,6 @@ export function SpecificStreamView() {
     isAddManagerOpen,
     openAddManager,
     closeAddManager,
-    isAddSubDepartmentOpen,
-    openAddSubDepartment,
-    closeAddSubDepartment,
-    isAddProjectOpen,
-    openAddProject,
-    closeAddProject,
     isAddEmployeeTrackerOpen,
     openAddEmployeeTracker,
     closeAddEmployeeTracker,
@@ -489,7 +481,7 @@ export function SpecificStreamView() {
 
             {/* Action Buttons Panel */}
             <div className="pt-3 border-t border-border/60 flex flex-wrap items-center gap-2">
-              {/* If NOT empTracker, show Member, Lead, Manager, Sub-department */}
+              {/* If NOT empTracker, show Member, Lead, Manager */}
               {!isEmpTracker && (
                 <>
                   <Button
@@ -524,32 +516,10 @@ export function SpecificStreamView() {
                     <UserCog className="h-3.5 w-3.5 text-primary" />
                     <span>Add Manager</span>
                   </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={openAddSubDepartment}
-                    className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-                  >
-                    <Building2 className="h-3.5 w-3.5 text-primary" />
-                    <span>Add Sub-department</span>
-                  </Button>
                 </>
               )}
 
-              {/* Always show Add Project and Add Employee Tracker */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={openAddProject}
-                className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-              >
-                <FolderKanban className="h-3.5 w-3.5 text-primary" />
-                <span>Add Project</span>
-              </Button>
-
+              {/* Keep Add Employee Tracker on all streams */}
               <Button
                 type="button"
                 variant="outline"
@@ -740,17 +710,6 @@ export function SpecificStreamView() {
                     : "Tasks created for this stream will automatically appear here."}
                 </p>
               </div>
-              {!isEmpTracker && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={openAddProject}
-                  className="text-xs h-8 cursor-pointer mt-2"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1 text-primary" />
-                  Add New Project
-                </Button>
-              )}
             </div>
           )}
         </div>
@@ -1100,28 +1059,6 @@ export function SpecificStreamView() {
         role="manager"
         title="Add Stream Manager"
         subtitle="Select an organization member to assign as manager of this stream"
-      />
-
-      <AddDepartmentModal
-        isOpen={isAddSubDepartmentOpen}
-        onClose={closeAddSubDepartment}
-        onSuccess={refetch}
-        organisationId={currentOrgId}
-        organisationName={currentOrgName}
-        parentStreamId={streamId}
-        parentStreamName={stream?.name}
-        title="Add Sub-department"
-        subtitle="Create a sub-department within this stream"
-      />
-
-      <AddProjectModal
-        isOpen={isAddProjectOpen}
-        onClose={closeAddProject}
-        onSuccess={refetch}
-        organisationId={currentOrgId}
-        organisationName={currentOrgName}
-        parentStreamId={streamId}
-        parentStreamName={stream?.name}
       />
 
       <AddEmployeeTrackerModal

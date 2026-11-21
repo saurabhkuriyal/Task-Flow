@@ -73,9 +73,17 @@ export interface GetStreamsResponse {
 
 export interface UpdateStreamPayload {
   streamId: string;
-  lead?: { id: string; name: string };
-  manager?: { id: string; name: string };
-  member?: { memberId: string; memberName: string };
+  name?: string;
+  description?: string;
+  leadId?: string;
+  lead?: { id: string; name?: string };
+  managerId?: string;
+  manager?: { id: string; name?: string };
+  memberId?: string;
+  member?: { memberId: string; memberName?: string; assigneeId?: string };
+  removeMemberId?: string;
+  subStreamId?: string;
+  parentStreamId?: string;
 }
 
 class StreamService {
