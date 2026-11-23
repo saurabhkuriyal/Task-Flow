@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/utils/db";
 import { StreamModel } from "@/models/stream.model";
+import { OrganizationModel } from "@/models/organization.model";
 import UserModel from "@/models/auth.model";
 
 export interface UpdateStreamRequestBody {
@@ -81,12 +82,24 @@ export async function POST(req: Request) {
     const leadIdRaw = (body.leadId || body.lead?.id)?.trim();
     if (leadIdRaw && mongoose.Types.ObjectId.isValid(leadIdRaw)) {
       const leadObjectId = new mongoose.Types.ObjectId(leadIdRaw);
-      setFields.lead = [{ id: leadObjectId }];
 
       // Remove stream reference from previous lead if changed
       const oldLeadId = existingStream.lead?.[0]?.id
         ? extractId(existingStream.lead[0].id)
         : "";
+
+      if (oldLeadId === leadIdRaw) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This user is already the lead of this stream.",
+          },
+          { status: 400 }
+        );
+      }
+
+      setFields.lead = [{ id: leadObjectId }];
+
       if (oldLeadId && oldLeadId !== leadIdRaw && mongoose.Types.ObjectId.isValid(oldLeadId)) {
         userSyncPromises.push(
           UserModel.findByIdAndUpdate(oldLeadId, {
@@ -99,7 +112,10 @@ export async function POST(req: Request) {
       userSyncPromises.push(
         UserModel.findByIdAndUpdate(leadObjectId, {
           $addToSet: {
-            ledOf: { streamId: streamObjectId },
+            ledOf: {
+              streamId: streamObjectId,
+              organisationId: existingStream.organisationId,
+            },
             streams: { streamId: streamObjectId },
           },
         })
@@ -110,12 +126,24 @@ export async function POST(req: Request) {
     const managerIdRaw = (body.managerId || body.manager?.id)?.trim();
     if (managerIdRaw && mongoose.Types.ObjectId.isValid(managerIdRaw)) {
       const managerObjectId = new mongoose.Types.ObjectId(managerIdRaw);
-      setFields.manager = [{ id: managerObjectId }];
 
       // Remove stream reference from previous manager if changed
       const oldManagerId = existingStream.manager?.[0]?.id
         ? extractId(existingStream.manager[0].id)
         : "";
+
+      if (oldManagerId === managerIdRaw) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This user is already the manager of this stream.",
+          },
+          { status: 400 }
+        );
+      }
+
+      setFields.manager = [{ id: managerObjectId }];
+
       if (
         oldManagerId &&
         oldManagerId !== managerIdRaw &&
@@ -132,17 +160,39 @@ export async function POST(req: Request) {
       userSyncPromises.push(
         UserModel.findByIdAndUpdate(managerObjectId, {
           $addToSet: {
-            managerOf: { streamId: streamObjectId },
+            managerOf: {
+              streamId: streamObjectId,
+              organisationId: existingStream.organisationId,
+            },
             streams: { streamId: streamObjectId },
           },
         })
       );
     }
 
-    // 5. Member update (add member with clean ObjectId reference)
+    // 5. Member update (add member with clean ObjectId reference & auto-create Employee Tracker)
     const memberIdRaw = (body.memberId || body.member?.memberId)?.trim();
     if (memberIdRaw && mongoose.Types.ObjectId.isValid(memberIdRaw)) {
       const memberObjectId = new mongoose.Types.ObjectId(memberIdRaw);
+
+      // Check if member already exists in this stream
+      const isAlreadyMember =
+        Array.isArray(existingStream.members) &&
+        existingStream.members.some((m) => {
+          const existingId = extractId(m.memberId);
+          return existingId === memberIdRaw;
+        });
+
+      if (isAlreadyMember) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This member is already added to this stream.",
+          },
+          { status: 400 }
+        );
+      }
+
       const memberObj: Record<string, unknown> = { memberId: memberObjectId };
 
       const assigneeIdRaw = body.member?.assigneeId?.trim();
@@ -157,6 +207,102 @@ export async function POST(req: Request) {
           $addToSet: { streams: { streamId: streamObjectId } },
         })
       );
+
+      // Auto-create an Employee Tracker stream for this member if one doesn't exist under this stream
+      try {
+        const existingTracker = await StreamModel.findOne({
+          type: "empTracker",
+          organisationId: existingStream.organisationId,
+          "lead.id": memberObjectId,
+          "parentStream.parentStreamId": streamObjectId,
+        }).lean();
+
+        if (!existingTracker) {
+          const memberUser = await UserModel.findById(memberObjectId)
+            .select("name email")
+            .lean();
+          const trackerName = memberUser?.name?.trim() || "Employee Tracker";
+
+          const trackerCreator =
+            Array.isArray(existingStream.creator) && existingStream.creator.length > 0
+              ? existingStream.creator
+              : [];
+
+          const newTracker = await StreamModel.create({
+            name: trackerName,
+            type: "empTracker",
+            description: `Employee tracker for ${trackerName}`,
+            organisationId: existingStream.organisationId,
+            creator: trackerCreator,
+            lead: [{ id: memberObjectId }],
+            manager: Array.isArray(existingStream.manager)
+              ? existingStream.manager
+              : [],
+            members: [{ memberId: memberObjectId }],
+            parentStream: [{ parentStreamId: streamObjectId }],
+            substream: [],
+          });
+
+          // Link new tracker as substream of the current stream
+          addToSetFields.substream = {
+            streamId: newTracker._id,
+            ...(trackerCreator[0]?.userId
+              ? { creatorId: trackerCreator[0].userId }
+              : {}),
+          };
+
+          // Sync tracker stream to member's streams array & ledOf array
+          userSyncPromises.push(
+            UserModel.findByIdAndUpdate(memberObjectId, {
+              $addToSet: {
+                streams: { streamId: newTracker._id },
+                ledOf: {
+                  streamId: newTracker._id,
+                  organisationId: existingStream.organisationId,
+                },
+              },
+            })
+          );
+
+          // Sync tracker stream to organization streams array
+          if (existingStream.organisationId) {
+            userSyncPromises.push(
+              OrganizationModel.findByIdAndUpdate(existingStream.organisationId, {
+                $addToSet: { streams: { streamId: newTracker._id } },
+              })
+            );
+          }
+        } else {
+          // Link existing tracker as substream if not already linked
+          addToSetFields.substream = { streamId: existingTracker._id };
+
+          // Ensure member's streams & ledOf have the existing tracker
+          userSyncPromises.push(
+            UserModel.findByIdAndUpdate(memberObjectId, {
+              $addToSet: {
+                streams: { streamId: existingTracker._id },
+                ledOf: {
+                  streamId: existingTracker._id,
+                  organisationId: existingStream.organisationId,
+                },
+              },
+            })
+          );
+
+          if (existingStream.organisationId) {
+            userSyncPromises.push(
+              OrganizationModel.findByIdAndUpdate(existingStream.organisationId, {
+                $addToSet: { streams: { streamId: existingTracker._id } },
+              })
+            );
+          }
+        }
+      } catch (trackerErr) {
+        console.warn(
+          "Failed to auto-create employee tracker stream:",
+          trackerErr
+        );
+      }
     }
 
     // 6. Member removal

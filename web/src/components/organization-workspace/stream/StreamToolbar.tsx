@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, Building2, FolderKanban, UserCheck } from "lucide-react";
+import { Search, Building2, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -10,7 +10,6 @@ export interface StreamToolbarProps {
   onSearchChange: (value: string) => void;
   onAddDepartment?: () => void;
   onAddProject?: () => void;
-  onAddEmployeeTracker?: () => void;
 }
 
 export function StreamToolbar({
@@ -18,7 +17,6 @@ export function StreamToolbar({
   onSearchChange,
   onAddDepartment,
   onAddProject,
-  onAddEmployeeTracker,
 }: StreamToolbarProps) {
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -55,17 +53,6 @@ export function StreamToolbar({
         >
           <FolderKanban className="h-3.5 w-3.5" />
           <span>Add Project</span>
-        </Button>
-
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={onAddEmployeeTracker}
-          className="h-9 gap-1.5 cursor-pointer text-xs"
-        >
-          <UserCheck className="h-3.5 w-3.5" />
-          <span>Add Employee Tracker</span>
         </Button>
       </div>
     </div>

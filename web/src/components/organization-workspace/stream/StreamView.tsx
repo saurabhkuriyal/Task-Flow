@@ -6,7 +6,6 @@ import { StreamToolbar } from "./StreamToolbar";
 import { StreamSections } from "./StreamSections";
 import { AddDepartmentModal } from "./AddDepartmentModal";
 import { AddProjectModal } from "./AddProjectModal";
-import { AddEmployeeTrackerModal } from "./AddEmployeeTrackerModal";
 import { useStreams } from "@/hooks/stream";
 
 export function StreamView() {
@@ -27,9 +26,6 @@ export function StreamView() {
     isAddProjectOpen,
     openAddProject,
     closeAddProject,
-    isAddEmployeeTrackerOpen,
-    openAddEmployeeTracker,
-    closeAddEmployeeTracker,
   } = useStreams();
 
   return (
@@ -39,7 +35,6 @@ export function StreamView() {
         onSearchChange={setSearchTerm}
         onAddDepartment={openAddDepartment}
         onAddProject={openAddProject}
-        onAddEmployeeTracker={openAddEmployeeTracker}
       />
 
       {error && (
@@ -58,7 +53,6 @@ export function StreamView() {
         orgId={currentOrgId}
         onAddDepartment={openAddDepartment}
         onAddProject={openAddProject}
-        onAddEmployeeTracker={openAddEmployeeTracker}
       />
 
       <AddDepartmentModal
@@ -72,14 +66,6 @@ export function StreamView() {
       <AddProjectModal
         isOpen={isAddProjectOpen}
         onClose={closeAddProject}
-        onSuccess={refetch}
-        organisationId={currentOrgId}
-        organisationName={currentOrgName}
-      />
-
-      <AddEmployeeTrackerModal
-        isOpen={isAddEmployeeTrackerOpen}
-        onClose={closeAddEmployeeTracker}
         onSuccess={refetch}
         organisationId={currentOrgId}
         organisationName={currentOrgName}

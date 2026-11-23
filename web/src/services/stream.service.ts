@@ -47,6 +47,24 @@ export interface StreamManagerItem {
   name: string;
 }
 
+export interface StreamMemberDetail {
+  memberId: string;
+  name: string;
+  email: string;
+  role?: string;
+  assigneeId?: string;
+  assigneeName?: string;
+}
+
+export interface GetStreamMembersResponse {
+  success: boolean;
+  message?: string;
+  count?: number;
+  members: StreamMemberDetail[];
+  lead?: StreamLeadItem[];
+  manager?: StreamManagerItem[];
+}
+
 export interface StreamItem {
   _id: string;
   id?: string;
@@ -190,6 +208,34 @@ class StreamService {
         );
       }
       throw new Error("An unexpected error occurred while fetching stream.");
+    }
+  }
+
+  /**
+   * Fetches all members of a stream by streamId and orgId
+   */
+  async getStreamMembers(
+    streamId: string,
+    organisationId?: string
+  ): Promise<GetStreamMembersResponse> {
+    try {
+      const response = await axios.get<GetStreamMembersResponse>(
+        "/api/stream/getStreamMembers",
+        {
+          params: { streamId, orgId: organisationId },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to fetch stream members."
+        );
+      }
+      throw new Error(
+        "An unexpected error occurred while fetching stream members."
+      );
     }
   }
 

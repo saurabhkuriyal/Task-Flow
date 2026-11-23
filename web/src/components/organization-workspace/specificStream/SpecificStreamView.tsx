@@ -15,10 +15,8 @@ import {
   AlertCircle,
   Calendar,
   ListTodo,
-  Sparkles,
   Shield,
   Layers,
-  Plus,
   Search,
   CheckCircle2,
   Clock3,
@@ -28,10 +26,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useStreamDetail } from "@/hooks/stream/useStreamDetail";
-import {
-  AddEmployeeTrackerModal,
-  AddStreamMemberModal,
-} from "../stream";
+import { AddStreamMemberModal } from "../stream";
+import { StreamMembersView } from "@/components/subStream";
 
 export function SpecificStreamView() {
   const {
@@ -40,7 +36,6 @@ export function SpecificStreamView() {
     isLoading,
     error,
     currentOrgId,
-    currentOrgName,
     streamId,
     refetch,
     isAddMemberOpen,
@@ -52,9 +47,6 @@ export function SpecificStreamView() {
     isAddManagerOpen,
     openAddManager,
     closeAddManager,
-    isAddEmployeeTrackerOpen,
-    openAddEmployeeTracker,
-    closeAddEmployeeTracker,
   } = useStreamDetail();
 
   const [activeTab, setActiveTab] = React.useState<"tasks" | "team" | "about">(
@@ -128,7 +120,40 @@ export function SpecificStreamView() {
   const managerName = stream?.manager?.[0]?.name;
   const creatorName = stream?.creator?.[0]?.name;
   const createdDate = formatDate(stream?.createdAt);
-  const membersList = stream?.members || [];
+  const membersList = React.useMemo(() => stream?.members || [], [stream?.members]);
+
+  const existingMemberIds = React.useMemo(() => {
+    return membersList
+      .map((m) => {
+        if (!m.memberId) return "";
+        if (typeof m.memberId === "object" && m.memberId !== null) {
+          const obj = m.memberId as { _id?: string; id?: string };
+          return String(obj._id || obj.id || "");
+        }
+        return String(m.memberId);
+      })
+      .filter(Boolean);
+  }, [membersList]);
+
+  const currentLeadId = React.useMemo(() => {
+    const raw = stream?.lead?.[0]?.id;
+    if (!raw) return "";
+    if (typeof raw === "object" && raw !== null) {
+      const obj = raw as { _id?: string; id?: string };
+      return String(obj._id || obj.id || "");
+    }
+    return String(raw);
+  }, [stream?.lead]);
+
+  const currentManagerId = React.useMemo(() => {
+    const raw = stream?.manager?.[0]?.id;
+    if (!raw) return "";
+    if (typeof raw === "object" && raw !== null) {
+      const obj = raw as { _id?: string; id?: string };
+      return String(obj._id || obj.id || "");
+    }
+    return String(raw);
+  }, [stream?.manager]);
 
   const getInitials = (name?: string) => {
     if (!name) return "U";
@@ -479,58 +504,43 @@ export function SpecificStreamView() {
               </div>
             )}
 
-            {/* Action Buttons Panel */}
-            <div className="pt-3 border-t border-border/60 flex flex-wrap items-center gap-2">
-              {/* If NOT empTracker, show Member, Lead, Manager */}
-              {!isEmpTracker && (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={openAddMember}
-                    className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-                  >
-                    <UserPlus className="h-3.5 w-3.5 text-primary" />
-                    <span>Add Member</span>
-                  </Button>
+            {/* Action Buttons Panel (Only for Department & Project) */}
+            {!isEmpTracker && (
+              <div className="pt-3 border-t border-border/60 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={openAddMember}
+                  className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
+                >
+                  <UserPlus className="h-3.5 w-3.5 text-primary" />
+                  <span>Add Member</span>
+                </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={openAddLead}
-                    className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-                  >
-                    <UserCheck className="h-3.5 w-3.5 text-primary" />
-                    <span>Add Lead</span>
-                  </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={openAddLead}
+                  className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
+                >
+                  <UserCheck className="h-3.5 w-3.5 text-primary" />
+                  <span>Add Lead</span>
+                </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={openAddManager}
-                    className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-                  >
-                    <UserCog className="h-3.5 w-3.5 text-primary" />
-                    <span>Add Manager</span>
-                  </Button>
-                </>
-              )}
-
-              {/* Keep Add Employee Tracker on all streams */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={openAddEmployeeTracker}
-                className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-              >
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span>Add Employee Tracker</span>
-              </Button>
-            </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={openAddManager}
+                  className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
+                >
+                  <UserCog className="h-3.5 w-3.5 text-primary" />
+                  <span>Add Manager</span>
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -882,72 +892,13 @@ export function SpecificStreamView() {
               </div>
             </div>
 
-            {/* Members Box */}
-            <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-border/60">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
-                    <Users className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Stream Members ({membersList.length})
-                    </h3>
-                    <p className="text-[11px] text-muted-foreground">
-                      Collaborators participating in this stream
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={openAddMember}
-                  className="text-xs h-7 gap-1 cursor-pointer"
-                >
-                  <Plus className="h-3 w-3 text-primary" />
-                  Add
-                </Button>
-              </div>
-
-              {membersList.length > 0 ? (
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {membersList.map((m, idx) => (
-                    <div
-                      key={m.memberId || idx}
-                      className="flex items-center justify-between p-2.5 rounded-xl border border-border/40 bg-muted/10 hover:bg-muted/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary font-semibold text-xs">
-                          {getInitials(m.memberName)}
-                        </div>
-                        <p className="text-xs font-medium text-foreground">
-                          {m.memberName || "Team Member"}
-                        </p>
-                      </div>
-                      <Badge variant="secondary" className="text-[10px]">
-                        Member
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-8 text-center space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    No members added to this stream yet.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={openAddMember}
-                    className="text-xs h-7"
-                  >
-                    <UserPlus className="h-3.5 w-3.5 mr-1" />
-                    Add First Member
-                  </Button>
-                </div>
-              )}
-            </div>
+            {/* Stream Members Component */}
+            <StreamMembersView
+              streamId={streamId}
+              organisationId={currentOrgId}
+              onAddMember={openAddMember}
+              isEmpTracker={isEmpTracker}
+            />
           </div>
         )
       )}
@@ -1037,6 +988,7 @@ export function SpecificStreamView() {
         role="member"
         title="Add Member to Stream"
         subtitle="Select an organization member to add to this stream"
+        existingIds={existingMemberIds}
       />
 
       <AddStreamMemberModal
@@ -1048,6 +1000,7 @@ export function SpecificStreamView() {
         role="lead"
         title="Add Stream Lead"
         subtitle="Select an organization member to assign as lead of this stream"
+        existingIds={currentLeadId ? [currentLeadId] : []}
       />
 
       <AddStreamMemberModal
@@ -1059,16 +1012,7 @@ export function SpecificStreamView() {
         role="manager"
         title="Add Stream Manager"
         subtitle="Select an organization member to assign as manager of this stream"
-      />
-
-      <AddEmployeeTrackerModal
-        isOpen={isAddEmployeeTrackerOpen}
-        onClose={closeAddEmployeeTracker}
-        onSuccess={refetch}
-        organisationId={currentOrgId}
-        organisationName={currentOrgName}
-        parentStreamId={streamId}
-        parentStreamName={stream?.name}
+        existingIds={currentManagerId ? [currentManagerId] : []}
       />
     </div>
   );

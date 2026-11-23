@@ -25,7 +25,6 @@ export interface StreamSectionsProps {
   orgId?: string;
   onAddDepartment?: () => void;
   onAddProject?: () => void;
-  onAddEmployeeTracker?: () => void;
 }
 
 export function StreamSections({
@@ -37,7 +36,6 @@ export function StreamSections({
   orgId,
   onAddDepartment,
   onAddProject,
-  onAddEmployeeTracker,
 }: StreamSectionsProps) {
   const params = useParams();
   const currentOrgId = orgId || (params?.orgId as string) || "";
@@ -384,18 +382,6 @@ export function StreamSections({
               </p>
             </div>
           </div>
-          {onAddEmployeeTracker && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onAddEmployeeTracker}
-              className="text-xs h-7 px-2.5 text-muted-foreground hover:text-foreground cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Add
-            </Button>
-          )}
         </div>
 
         {/* Shadow Loading for Employee Tracker */}
@@ -472,20 +458,11 @@ export function StreamSections({
             {searchTerm ? (
               <p>No tracked employees match &quot;{searchTerm}&quot;.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <p>No tracked employee data available yet.</p>
-                {onAddEmployeeTracker && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onAddEmployeeTracker}
-                    className="text-xs cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Track First Employee
-                  </Button>
-                )}
+                <p className="text-[11px] text-muted-foreground/80">
+                  Tracked employees are automatically created when members are added to departments and projects.
+                </p>
               </div>
             )}
           </div>
