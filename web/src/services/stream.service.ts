@@ -240,6 +240,36 @@ class StreamService {
   }
 
   /**
+   * Fetches employee tracker streams for a specific parent stream
+   */
+  async getSpecificEmployeeStreams(
+    streamId: string,
+    organisationId?: string
+  ): Promise<GetStreamsResponse> {
+    try {
+      const response = await axios.get<GetStreamsResponse>(
+        "/api/stream/getSpecificEmployeeStreams",
+        {
+          params: { streamId, orgId: organisationId },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage ||
+            error.message ||
+            "Failed to fetch employee tracker streams."
+        );
+      }
+      throw new Error(
+        "An unexpected error occurred while fetching employee tracker streams."
+      );
+    }
+  }
+
+  /**
    * Updates stream lead, manager, or member
    */
   async updateStream(payload: UpdateStreamPayload): Promise<StreamResponse> {
