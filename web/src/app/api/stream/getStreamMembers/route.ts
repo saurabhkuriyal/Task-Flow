@@ -46,7 +46,11 @@ export async function GET(req: Request) {
       filter.organisationId = new mongoose.Types.ObjectId(orgId);
     }
 
-    const stream = await StreamModel.findOne(filter).lean();
+    let stream = await StreamModel.findOne(filter).lean();
+    if (!stream && filter.organisationId) {
+      delete filter.organisationId;
+      stream = await StreamModel.findOne(filter).lean();
+    }
 
     if (!stream) {
       return NextResponse.json(

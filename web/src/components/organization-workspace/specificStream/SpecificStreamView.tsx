@@ -20,24 +20,26 @@ import {
   Search,
   CheckCircle2,
   Clock3,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useStreamDetail } from "@/hooks/stream/useStreamDetail";
+import { useStreamTasks } from "@/hooks/task";
 import { AddStreamMemberModal } from "../stream";
+import { AddTaskModal } from "../task";
 import { StreamMembersView, SpecificEmployeeStreamsView } from "@/components/subStream";
 
 export function SpecificStreamView() {
   const {
     stream,
-    tasks,
-    isLoading,
-    error,
+    isLoading: isLoadingStream,
+    error: streamError,
     currentOrgId,
     streamId,
-    refetch,
+    refetch: refetchStream,
     isAddMemberOpen,
     openAddMember,
     closeAddMember,
@@ -49,10 +51,33 @@ export function SpecificStreamView() {
     closeAddManager,
   } = useStreamDetail();
 
+  const {
+    tasks,
+    filteredTasks,
+    isLoading: isLoadingTasks,
+    searchTerm: taskSearch,
+    setSearchTerm: setTaskSearch,
+    refetch: refetchTasks,
+  } = useStreamTasks({
+    streamId,
+    orgId: currentOrgId,
+    enabled: Boolean(streamId),
+  });
+
+  const refetch = React.useCallback(() => {
+    refetchStream();
+    refetchTasks();
+  }, [refetchStream, refetchTasks]);
+
+  const isLoading = isLoadingStream;
+  const error = streamError;
+
   const [activeTab, setActiveTab] = React.useState<
     "tasks" | "team" | "trackers" | "about"
   >("tasks");
-  const [taskSearch, setTaskSearch] = React.useState("");
+  const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false);
+  const openAddTask = React.useCallback(() => setIsAddTaskOpen(true), []);
+  const closeAddTask = React.useCallback(() => setIsAddTaskOpen(false), []);
 
   const streamType = stream?.type || "department";
   const isEmpTracker = streamType === "empTracker";
@@ -164,17 +189,6 @@ export function SpecificStreamView() {
       .toUpperCase()
       .slice(0, 2);
   };
-
-  const filteredTasks = React.useMemo(() => {
-    if (!taskSearch.trim()) return tasks;
-    const term = taskSearch.toLowerCase();
-    return tasks.filter(
-      (t) =>
-        t.title.toLowerCase().includes(term) ||
-        t.assigneeName?.toLowerCase().includes(term) ||
-        t.status.toLowerCase().includes(term)
-    );
-  }, [tasks, taskSearch]);
 
   const getPriorityBadge = (priority?: string) => {
     switch (priority) {
@@ -504,43 +518,55 @@ export function SpecificStreamView() {
               </div>
             )}
 
-            {/* Action Buttons Panel (Only for Department & Project) */}
-            {!isEmpTracker && (
-              <div className="pt-3 border-t border-border/60 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={openAddMember}
-                  className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-                >
-                  <UserPlus className="h-3.5 w-3.5 text-primary" />
-                  <span>Add Member</span>
-                </Button>
+            {/* Action Buttons Panel (For every stream: Add Task, plus Member/Lead/Manager for Dept & Project) */}
+            <div className="pt-3 border-t border-border/60 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={openAddTask}
+                className="text-xs h-8.5 rounded-lg transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Task</span>
+              </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={openAddLead}
-                  className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-                >
-                  <UserCheck className="h-3.5 w-3.5 text-primary" />
-                  <span>Add Lead</span>
-                </Button>
+              {!isEmpTracker && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddMember}
+                    className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 text-primary" />
+                    <span>Add Member</span>
+                  </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={openAddManager}
-                  className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
-                >
-                  <UserCog className="h-3.5 w-3.5 text-primary" />
-                  <span>Add Manager</span>
-                </Button>
-              </div>
-            )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddLead}
+                    className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
+                  >
+                    <UserCheck className="h-3.5 w-3.5 text-primary" />
+                    <span>Add Lead</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddManager}
+                    className="text-xs h-8.5 rounded-lg border-border/80 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer gap-1.5 shadow-2xs font-medium"
+                  >
+                    <UserCog className="h-3.5 w-3.5 text-primary" />
+                    <span>Add Manager</span>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -650,20 +676,32 @@ export function SpecificStreamView() {
               </div>
             </div>
 
-            {/* Quick search input */}
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={taskSearch}
-                onChange={(e) => setTaskSearch(e.target.value)}
-                className="pl-8 text-xs h-8.5 rounded-lg"
-              />
+            {/* Quick search input & Add Task Button */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={taskSearch}
+                  onChange={(e) => setTaskSearch(e.target.value)}
+                  className="pl-8 text-xs h-8.5 rounded-lg"
+                />
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={openAddTask}
+                className="text-xs h-8.5 gap-1.5 cursor-pointer shrink-0 font-medium"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Task</span>
+              </Button>
             </div>
           </div>
 
           {/* Shadow Loader */}
-          {isLoading ? (
+          {isLoadingTasks ? (
             <div className="p-4 sm:p-5 space-y-3">
               <div className="grid grid-cols-5 gap-4 pb-2 border-b border-border/60">
                 <Skeleton className="h-3.5 w-24" />
@@ -734,6 +772,17 @@ export function SpecificStreamView() {
                     ? "Try clearing the search filter to see all tasks."
                     : "Tasks created for this stream will automatically appear here."}
                 </p>
+                {!taskSearch && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={openAddTask}
+                    className="text-xs h-8.5 gap-1.5 cursor-pointer mt-2"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Create First Task</span>
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1011,7 +1060,16 @@ export function SpecificStreamView() {
         </div>
       )}
 
-      {/* 5. Modals (Cleanly reused from ../stream) */}
+      {/* 5. Modals (Cleanly reused from ../stream & ../task) */}
+      <AddTaskModal
+        isOpen={isAddTaskOpen}
+        onClose={closeAddTask}
+        onSuccess={refetch}
+        stream={stream}
+        streamId={streamId}
+        organisationId={currentOrgId}
+      />
+
       <AddStreamMemberModal
         isOpen={isAddMemberOpen}
         onClose={closeAddMember}

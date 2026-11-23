@@ -1,5 +1,7 @@
 export * from "./auth.model";
 export * from "./organization.model";
+export * from "./stream.model";
+export * from "./tasks.model";
 
 export interface User {
   id: string;

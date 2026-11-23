@@ -35,6 +35,7 @@ export interface StreamMemberItem {
 export interface StreamLeadItem {
   id: string;
   name: string;
+  email?: string;
 }
 
 export interface StreamCreatorItem {
@@ -45,6 +46,7 @@ export interface StreamCreatorItem {
 export interface StreamManagerItem {
   id: string;
   name: string;
+  email?: string;
 }
 
 export interface StreamMemberDetail {
