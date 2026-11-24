@@ -60,6 +60,22 @@ export async function POST(req: Request) {
       );
     }
 
+    // Verify creator's role: employees cannot create organizations
+    const creatorUser = await UserModel.findById(ownerId).select("role").lean();
+    if (
+      creatorUser &&
+      (creatorUser.role === "employee" || creatorUser.role === "employees")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Forbidden: Accounts with the role 'employee' are not permitted to create organizations.",
+        },
+        { status: 403 }
+      );
+    }
+
     // 2. Extract and validate organization properties
     const organizationName = (body.organizationName || "").trim();
     const gstNo = (body.gstNo || "").trim().toUpperCase();

@@ -22,7 +22,8 @@ export function WorkspaceHero({
   totalMembers,
   totalTasks,
 }: WorkspaceHeroProps) {
-  const { userName } = useUser();
+  const { userName, role } = useUser();
+  const isEmployee = role?.toLowerCase() === "employee" || role?.toLowerCase() === "employees";
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-b from-card/90 to-card/50 p-4 sm:p-6 lg:p-10 shadow-lg backdrop-blur-sm">
@@ -73,17 +74,19 @@ export function WorkspaceHero({
 
           {/* Action buttons responsive: full-width stack on mobile, inline on tablet+ */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 pt-2">
-            <Link
-              href={ROUTES.ORGANIZATIONS_CREATE}
-              onClick={onCreateClick}
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "w-full sm:w-auto h-11 sm:h-10 gap-2 font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer justify-center text-sm"
-              )}
-            >
-              <Plus className="h-4 w-4 stroke-[2.5]" />
-              <span>Create Organization</span>
-            </Link>
+            {!isEmployee && (
+              <Link
+                href={ROUTES.ORGANIZATIONS_CREATE}
+                onClick={onCreateClick}
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "w-full sm:w-auto h-11 sm:h-10 gap-2 font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer justify-center text-sm"
+                )}
+              >
+                <Plus className="h-4 w-4 stroke-[2.5]" />
+                <span>Create Organization</span>
+              </Link>
+            )}
 
             <a
               href="#org-list"

@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useCreateOrganization } from "@/hooks/organizations";
+import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,9 @@ import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 
 export function CreateOrganizationForm() {
+  const { role } = useUser();
+  const isEmployee = role?.toLowerCase() === "employee" || role?.toLowerCase() === "employees";
+
   const { form, isLoading, serverError, isSuccess, onSubmit } =
     useCreateOrganization();
   const {
@@ -35,6 +39,35 @@ export function CreateOrganizationForm() {
   } = form;
 
   const currentYear = new Date().getFullYear();
+
+  if (isEmployee) {
+    return (
+      <div className="flex min-h-[calc(100vh-4.5rem)] items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+        <Card className="max-w-md w-full border-border/80 bg-card/90 shadow-xl p-6 text-center space-y-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-bold text-foreground">
+              Registration Restricted
+            </h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your account has the role <strong>Employee</strong>. Only organization owners and chiefs are permitted to register new enterprise organizations.
+            </p>
+          </div>
+          <Link
+            href="/workspaces"
+            className={cn(
+              buttonVariants({ size: "sm" }),
+              "w-full text-xs font-semibold cursor-pointer"
+            )}
+          >
+            Back to Workspaces
+          </Link>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-4.5rem)] items-center justify-center px-4 py-8 sm:px-6 lg:px-8">

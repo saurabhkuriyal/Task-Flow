@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Building2, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useUser } from "@/context/UserContext";
 import { OrganizationCard } from "./OrganizationCard";
 import type { WorkspaceOrganization, OrganizationRole } from "@/types/workspace";
 import { ROUTES } from "@/constants/routes";
@@ -31,6 +32,9 @@ export function OrganizationList({
   onToggleFavorite,
   onCreateClick,
 }: OrganizationListProps) {
+  const { role } = useUser();
+  const isEmployee = role?.toLowerCase() === "employee" || role?.toLowerCase() === "employees";
+
   const roleFilters: { label: string; value: "ALL" | OrganizationRole }[] = [
     { label: "All", value: "ALL" },
     { label: "Owner", value: "OWNER" },
@@ -146,17 +150,19 @@ export function OrganizationList({
                 Clear Search
               </Button>
             )}
-            <Link
-              href={ROUTES.ORGANIZATIONS_CREATE}
-              onClick={onCreateClick}
-              className={cn(
-                buttonVariants({ size: "sm" }),
-                "w-full sm:w-auto gap-1.5 cursor-pointer text-xs justify-center"
-              )}
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create Organization</span>
-            </Link>
+            {!isEmployee && (
+              <Link
+                href={ROUTES.ORGANIZATIONS_CREATE}
+                onClick={onCreateClick}
+                className={cn(
+                  buttonVariants({ size: "sm" }),
+                  "w-full sm:w-auto gap-1.5 cursor-pointer text-xs justify-center"
+                )}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create Organization</span>
+              </Link>
+            )}
           </div>
         </div>
       )}
