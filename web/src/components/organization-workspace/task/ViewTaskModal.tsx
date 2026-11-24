@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useTaskTimer, formatSecondsToHHMMSS } from "@/hooks/task/useTaskTimer";
+import { useTimeLog, formatSecondsToHHMMSS } from "@/hooks/task/useTimeLog";
 import { taskService, type TaskItem } from "@/services/task.service";
 import type { TaskPriority, TaskStatus, TaskImpact } from "@/models/tasks.model";
 
@@ -46,19 +46,20 @@ export function ViewTaskModal({
   const taskId = task?.id || task?._id || "";
   const initialTotalSeconds = task?.totalTimeSpent || 0;
 
-  // Timer hook
+  // Timer & Timelog hook
   const {
     isRunning,
     formattedSessionTime,
     formattedTotalTime,
+    timeLogs,
     isSaving: isSavingTimer,
     error: timerError,
     startTimer,
     stopTimer,
-  } = useTaskTimer({
+  } = useTimeLog({
     taskId,
     initialTotalTimeSpent: initialTotalSeconds,
-    timeLogs: task?.timeLogs || [],
+    initialTimeLogs: task?.timeLogs || [],
     onTimeSaved: () => {
       onTaskUpdated?.();
     },
@@ -571,16 +572,16 @@ export function ViewTaskModal({
           </div>
 
           {/* 7. Previous Time Logs History */}
-          {Array.isArray(task.timeLogs) && task.timeLogs.length > 0 && (
+          {Array.isArray(timeLogs) && timeLogs.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-border/60">
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-primary" />
                 <h4 className="font-semibold text-foreground text-xs">
-                  Time Log History ({task.timeLogs.length} sessions)
+                  Time Log History ({timeLogs.length} sessions)
                 </h4>
               </div>
               <div className="rounded-xl border border-border/60 divide-y divide-border/40 overflow-hidden bg-background">
-                {task.timeLogs.map((log, index) => (
+                {timeLogs.map((log, index) => (
                   <div
                     key={log._id ? String(log._id) : index}
                     className="flex items-center justify-between p-2.5 text-[11px]"

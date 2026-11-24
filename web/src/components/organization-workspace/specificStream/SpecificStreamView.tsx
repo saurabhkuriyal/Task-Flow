@@ -594,21 +594,19 @@ export function SpecificStreamView() {
         <button
           type="button"
           onClick={() => setActiveTab("tasks")}
-          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-            activeTab === "tasks"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-          }`}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === "tasks"
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
         >
           <ListTodo className="h-4 w-4" />
           <span>Tasks</span>
           <Badge
             variant={activeTab === "tasks" ? "outline" : "secondary"}
-            className={`text-[10px] h-4 px-1.5 ${
-              activeTab === "tasks"
-                ? "border-primary-foreground/30 text-primary-foreground"
-                : ""
-            }`}
+            className={`text-[10px] h-4 px-1.5 ${activeTab === "tasks"
+              ? "border-primary-foreground/30 text-primary-foreground"
+              : ""
+              }`}
           >
             {tasks.length}
           </Badge>
@@ -617,11 +615,10 @@ export function SpecificStreamView() {
         <button
           type="button"
           onClick={() => setActiveTab("team")}
-          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-            activeTab === "team"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-          }`}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === "team"
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
         >
           {isEmpTracker ? (
             <>
@@ -634,11 +631,10 @@ export function SpecificStreamView() {
               <span>Team & Leadership</span>
               <Badge
                 variant={activeTab === "team" ? "outline" : "secondary"}
-                className={`text-[10px] h-4 px-1.5 ${
-                  activeTab === "team"
-                    ? "border-primary-foreground/30 text-primary-foreground"
-                    : ""
-                }`}
+                className={`text-[10px] h-4 px-1.5 ${activeTab === "team"
+                  ? "border-primary-foreground/30 text-primary-foreground"
+                  : ""
+                  }`}
               >
                 {membersList.length + (leadName ? 1 : 0) + (managerName ? 1 : 0)}
               </Badge>
@@ -650,11 +646,10 @@ export function SpecificStreamView() {
           <button
             type="button"
             onClick={() => setActiveTab("trackers")}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              activeTab === "trackers"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === "trackers"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
           >
             <UserCheck className="h-4 w-4" />
             <span>Employee Trackers</span>
@@ -664,11 +659,10 @@ export function SpecificStreamView() {
         <button
           type="button"
           onClick={() => setActiveTab("about")}
-          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-            activeTab === "about"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-          }`}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === "about"
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
         >
           <Shield className="h-4 w-4" />
           <span>Overview</span>
@@ -1130,38 +1124,29 @@ export function SpecificStreamView() {
         organisationId={currentOrgId}
       />
 
-      {viewingTask && (
-        <ViewTaskModal
-          key={viewingTask.id || viewingTask._id}
-          isOpen={Boolean(viewingTask)}
-          onClose={closeViewTask}
-          task={viewingTask}
-          onTaskUpdated={refetchTasks}
-        />
-      )}
+      <ViewTaskModal
+        isOpen={Boolean(viewingTask)}
+        onClose={closeViewTask}
+        task={viewingTask}
+        onTaskUpdated={refetchTasks}
+      />
 
-      {editingTask && (
-        <EditTaskModal
-          key={editingTask.id || editingTask._id}
-          isOpen={Boolean(editingTask)}
-          onClose={closeEditTask}
-          onSuccess={refetch}
-          task={editingTask}
-          stream={stream}
-          streamId={streamId}
-          organisationId={currentOrgId}
-        />
-      )}
+      <EditTaskModal
+        isOpen={Boolean(editingTask)}
+        onClose={closeEditTask}
+        onSuccess={refetch}
+        task={editingTask}
+        stream={stream}
+        streamId={streamId}
+        organisationId={currentOrgId}
+      />
 
-      {deletingTask && (
-        <DeleteTaskModal
-          key={deletingTask.id || deletingTask._id}
-          isOpen={Boolean(deletingTask)}
-          onClose={closeDeleteTask}
-          onSuccess={refetch}
-          task={deletingTask}
-        />
-      )}
+      <DeleteTaskModal
+        isOpen={Boolean(deletingTask)}
+        onClose={closeDeleteTask}
+        onSuccess={refetch}
+        task={deletingTask}
+      />
 
       <AddStreamMemberModal
         isOpen={isAddMemberOpen}
