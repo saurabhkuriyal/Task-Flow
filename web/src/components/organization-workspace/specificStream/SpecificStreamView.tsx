@@ -21,6 +21,9 @@ import {
   CheckCircle2,
   Clock3,
   Plus,
+  Eye,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +32,13 @@ import { Input } from "@/components/ui/input";
 import { useStreamDetail } from "@/hooks/stream/useStreamDetail";
 import { useStreamTasks } from "@/hooks/task";
 import { AddStreamMemberModal } from "../stream";
-import { AddTaskModal } from "../task";
+import {
+  AddTaskModal,
+  ViewTaskModal,
+  EditTaskModal,
+  DeleteTaskModal,
+} from "../task";
+import type { TaskItem } from "@/services/task.service";
 import { StreamMembersView, SpecificEmployeeStreamsView } from "@/components/subStream";
 
 export function SpecificStreamView() {
@@ -78,6 +87,15 @@ export function SpecificStreamView() {
   const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false);
   const openAddTask = React.useCallback(() => setIsAddTaskOpen(true), []);
   const closeAddTask = React.useCallback(() => setIsAddTaskOpen(false), []);
+
+  // Modals for task row actions: View, Edit, Delete
+  const [viewingTask, setViewingTask] = React.useState<TaskItem | null>(null);
+  const [editingTask, setEditingTask] = React.useState<TaskItem | null>(null);
+  const [deletingTask, setDeletingTask] = React.useState<TaskItem | null>(null);
+
+  const closeViewTask = React.useCallback(() => setViewingTask(null), []);
+  const closeEditTask = React.useCallback(() => setEditingTask(null), []);
+  const closeDeleteTask = React.useCallback(() => setDeletingTask(null), []);
 
   const streamType = stream?.type || "department";
   const isEmpTracker = streamType === "empTracker";
@@ -703,23 +721,25 @@ export function SpecificStreamView() {
           {/* Shadow Loader */}
           {isLoadingTasks ? (
             <div className="p-4 sm:p-5 space-y-3">
-              <div className="grid grid-cols-5 gap-4 pb-2 border-b border-border/60">
+              <div className="grid grid-cols-6 gap-4 pb-2 border-b border-border/60">
                 <Skeleton className="h-3.5 w-24" />
                 <Skeleton className="h-3.5 w-16" />
                 <Skeleton className="h-3.5 w-16" />
                 <Skeleton className="h-3.5 w-20" />
                 <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-3.5 w-16 ml-auto" />
               </div>
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="grid grid-cols-5 gap-4 py-3 items-center border-b border-border/40 last:border-b-0 animate-pulse"
+                  className="grid grid-cols-6 gap-4 py-3 items-center border-b border-border/40 last:border-b-0 animate-pulse"
                 >
                   <Skeleton className="h-3.5 w-32" />
                   <Skeleton className="h-5 w-16 rounded-full" />
                   <Skeleton className="h-5 w-14 rounded-full" />
                   <Skeleton className="h-3.5 w-24" />
                   <Skeleton className="h-3.5 w-20" />
+                  <Skeleton className="h-5 w-16 ml-auto rounded-lg" />
                 </div>
               ))}
             </div>
@@ -733,6 +753,7 @@ export function SpecificStreamView() {
                     <th className="py-3 px-4 font-semibold">Priority</th>
                     <th className="py-3 px-4 font-semibold">Assignee</th>
                     <th className="py-3 px-4 font-semibold">Due Date</th>
+                    <th className="py-3 px-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50 text-foreground">
@@ -751,6 +772,45 @@ export function SpecificStreamView() {
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">
                         {task.dueDate || "-"}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* View button with Eye icon */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setViewingTask(task)}
+                            title="View Task Details & Time Tracker"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md cursor-pointer transition-colors"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+
+                          {/* Edit button with Pencil icon */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingTask(task)}
+                            title="Edit Task"
+                            className="h-7 w-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded-md cursor-pointer transition-colors"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+
+                          {/* Delete button with Trash2 icon */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletingTask(task)}
+                            title="Delete Task"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1069,6 +1129,39 @@ export function SpecificStreamView() {
         streamId={streamId}
         organisationId={currentOrgId}
       />
+
+      {viewingTask && (
+        <ViewTaskModal
+          key={viewingTask.id || viewingTask._id}
+          isOpen={Boolean(viewingTask)}
+          onClose={closeViewTask}
+          task={viewingTask}
+          onTaskUpdated={refetchTasks}
+        />
+      )}
+
+      {editingTask && (
+        <EditTaskModal
+          key={editingTask.id || editingTask._id}
+          isOpen={Boolean(editingTask)}
+          onClose={closeEditTask}
+          onSuccess={refetch}
+          task={editingTask}
+          stream={stream}
+          streamId={streamId}
+          organisationId={currentOrgId}
+        />
+      )}
+
+      {deletingTask && (
+        <DeleteTaskModal
+          key={deletingTask.id || deletingTask._id}
+          isOpen={Boolean(deletingTask)}
+          onClose={closeDeleteTask}
+          onSuccess={refetch}
+          task={deletingTask}
+        />
+      )}
 
       <AddStreamMemberModal
         isOpen={isAddMemberOpen}

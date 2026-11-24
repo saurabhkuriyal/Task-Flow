@@ -12,6 +12,15 @@ export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
 export type TaskImpact = "low" | "medium" | "high" | "critical";
 
+export interface ITimeLog {
+  _id?: mongoose.Types.ObjectId | string;
+  userId: mongoose.Types.ObjectId | string;
+  startTime: Date;
+  endTime?: Date | null;
+  duration?: number; // duration in seconds
+  isRunning: boolean;
+}
+
 export interface ITask extends Document {
   taskname: string;
   orgId: mongoose.Types.ObjectId | string;
@@ -28,9 +37,38 @@ export interface ITask extends Document {
   dueDate?: Date | null;
   recurring: boolean;
   parentTask?: mongoose.Types.ObjectId | string | null;
+  timeLogs: ITimeLog[];
+  totalTimeSpent: number; // in seconds
   createdAt: Date;
   updatedAt: Date;
 }
+
+const TimeLogSchema = new Schema<ITimeLog>(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "User ID is required for time log"],
+    },
+    startTime: {
+      type: Date,
+      required: [true, "Start time is required"],
+    },
+    endTime: {
+      type: Date,
+      default: null,
+    },
+    duration: {
+      type: Number,
+      default: 0,
+    },
+    isRunning: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: true }
+);
 
 const TaskSchema = new Schema<ITask>(
   {
@@ -121,6 +159,15 @@ const TaskSchema = new Schema<ITask>(
       type: Schema.Types.ObjectId,
       ref: "Task",
       default: null,
+      index: true,
+    },
+    timeLogs: {
+      type: [TimeLogSchema],
+      default: [],
+    },
+    totalTimeSpent: {
+      type: Number,
+      default: 0,
       index: true,
     },
   },

@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import type { TaskStatus, TaskPriority, TaskImpact } from "@/models/tasks.model";
+import type { TaskStatus, TaskPriority, TaskImpact, ITimeLog } from "@/models/tasks.model";
 
 /**
  * Payload interface for creating a new task.
@@ -22,10 +22,43 @@ export interface CreateTaskPayload {
   parentTask?: string | null;
 }
 
+export interface UpdateTaskPayload {
+  taskId?: string;
+  taskname?: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  impact?: TaskImpact;
+  recurring?: boolean;
+  dueDate?: string | null;
+  assignedId?: string | null;
+  note?: string;
+}
+
+export interface StartTimerPayload {
+  taskId: string;
+  userId: string;
+  startTime?: string | Date;
+}
+
+export interface StopTimerPayload {
+  taskId: string;
+  userId: string;
+  endTime?: string | Date;
+  duration?: number; // duration in seconds
+}
+
 export interface TaskResponse {
   success: boolean;
   message: string;
   data?: unknown;
+}
+
+export interface TimeLogsResponse {
+  success: boolean;
+  message?: string;
+  timeLogs: ITimeLog[];
+  totalTimeSpent: number; // in seconds
 }
 
 export interface TaskItem {
@@ -46,6 +79,8 @@ export interface TaskItem {
   assignerName?: string;
   subtaskId?: string[];
   note?: string;
+  timeLogs?: ITimeLog[];
+  totalTimeSpent?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -85,6 +120,133 @@ class TaskService {
         );
       }
       throw new Error("An unexpected error occurred while creating task.");
+    }
+  }
+
+  /**
+   * Updates an existing task by ID.
+   */
+  async updateTask(
+    taskId: string,
+    payload: UpdateTaskPayload
+  ): Promise<TaskResponse> {
+    try {
+      const response = await axios.put<TaskResponse>(
+        "/api/tasks/updateTask",
+        { taskId, ...payload },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to update task."
+        );
+      }
+      throw new Error("An unexpected error occurred while updating task.");
+    }
+  }
+
+  /**
+   * Deletes a task by ID.
+   */
+  async deleteTask(taskId: string): Promise<TaskResponse> {
+    try {
+      const response = await axios.delete<TaskResponse>(
+        "/api/tasks/deleteTask",
+        {
+          data: { taskId },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to delete task."
+        );
+      }
+      throw new Error("An unexpected error occurred while deleting task.");
+    }
+  }
+
+  /**
+   * Starts a new live timer session on a task.
+   */
+  async startTimer(payload: StartTimerPayload): Promise<TaskResponse> {
+    try {
+      const response = await axios.post<TaskResponse>(
+        "/api/tasks/timer/start",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to start timer."
+        );
+      }
+      throw new Error("An unexpected error occurred while starting timer.");
+    }
+  }
+
+  /**
+   * Stops an active timer session on a task and records duration.
+   */
+  async stopTimer(payload: StopTimerPayload): Promise<TaskResponse> {
+    try {
+      const response = await axios.post<TaskResponse>(
+        "/api/tasks/timer/stop",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to stop timer."
+        );
+      }
+      throw new Error("An unexpected error occurred while stopping timer.");
+    }
+  }
+
+  /**
+   * Fetches all recorded timelogs and cumulative total for a task.
+   */
+  async getTimeLogs(taskId: string): Promise<TimeLogsResponse> {
+    try {
+      const response = await axios.get<TimeLogsResponse>(
+        "/api/tasks/timer/logs",
+        {
+          params: { taskId },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to fetch time logs."
+        );
+      }
+      throw new Error("An unexpected error occurred while fetching time logs.");
     }
   }
 
