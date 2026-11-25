@@ -57,13 +57,17 @@ export async function GET(req: Request) {
     // 2. Fetch users by Organization ID / Name
     if (orgId) {
       const memberIds = new Set<string>();
+      const orgObjectId = mongoose.Types.ObjectId.isValid(orgId)
+        ? new mongoose.Types.ObjectId(orgId)
+        : null;
 
       // A. Check Organization document for owner and member list
       try {
         let orgDoc = null;
-        if (mongoose.Types.ObjectId.isValid(orgId)) {
-          orgDoc = await OrganizationModel.findById(orgId).lean();
-        } else {
+        if (orgObjectId) {
+          orgDoc = await OrganizationModel.findById(orgObjectId).lean();
+        }
+        if (!orgDoc) {
           orgDoc = await OrganizationModel.findOne({
             $or: [{ _id: orgId }, { organizationName: decodeURIComponent(orgId) }],
           }).lean();
@@ -84,14 +88,19 @@ export async function GET(req: Request) {
       }
 
       // B. Query UserModel for users with matching organisationId or matching memberIds
-      const validObjectIds = Array.from(memberIds).filter((id) =>
-        mongoose.Types.ObjectId.isValid(id)
-      );
+      const validObjectIds = Array.from(memberIds)
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
 
       const queryConditions: Record<string, unknown>[] = [
         { "organisations.organisationId": orgId },
         { "createdOrganisations.createdOrganisationId": orgId },
       ];
+
+      if (orgObjectId) {
+        queryConditions.push({ "organisations.organisationId": orgObjectId });
+        queryConditions.push({ "createdOrganisations.createdOrganisationId": orgObjectId });
+      }
 
       if (validObjectIds.length > 0) {
         queryConditions.push({ _id: { $in: validObjectIds } });

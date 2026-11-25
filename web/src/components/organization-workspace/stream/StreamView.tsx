@@ -13,6 +13,7 @@ export function StreamView() {
     departments,
     projects,
     empTrackers,
+    filteredMembers,
     searchTerm,
     setSearchTerm,
     isLoading,
@@ -49,6 +50,7 @@ export function StreamView() {
         departments={departments}
         projects={projects}
         empTrackers={empTrackers}
+        members={filteredMembers}
         searchTerm={searchTerm}
         orgId={currentOrgId}
         onAddDepartment={openAddDepartment}

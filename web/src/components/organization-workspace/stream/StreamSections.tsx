@@ -10,17 +10,22 @@ import {
   User,
   Plus,
   Calendar,
+  ListTodo,
+  Mail,
+  Hash,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { StreamItem } from "@/services/stream.service";
+import type { User as UserType } from "@/types/auth";
 
 export interface StreamSectionsProps {
   isLoading?: boolean;
   departments?: StreamItem[];
   projects?: StreamItem[];
   empTrackers?: StreamItem[];
+  members?: UserType[];
   searchTerm?: string;
   orgId?: string;
   onAddDepartment?: () => void;
@@ -32,6 +37,7 @@ export function StreamSections({
   departments = [],
   projects = [],
   empTrackers = [],
+  members = [],
   searchTerm = "",
   orgId,
   onAddDepartment,
@@ -462,6 +468,121 @@ export function StreamSections({
                 <p>No tracked employee data available yet.</p>
                 <p className="text-[11px] text-muted-foreground/80">
                   Tracked employees are automatically created when members are added to departments and projects.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 4. Employee Tasks Section */}
+      <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/60">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <ListTodo className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Employee Tasks
+                </h2>
+                {!isLoading && (
+                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">
+                    {members.length}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Members and employees belonging to this organization
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Shadow Loading for Employee Tasks */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-3.5 rounded-lg border border-border/60 bg-muted/20 animate-pulse"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3.5 w-28" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-14 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : members.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {members.map((member) => {
+              const userId = member.id || member._id || "";
+              const memberName = member.name || "Member";
+              const userRole = member.role || "employee";
+
+              return (
+                <div
+                  key={userId || member.email}
+                  className="group relative flex flex-col justify-between p-4 rounded-xl border border-border/70 bg-card hover:border-primary/50 hover:shadow-md transition-all text-left"
+                >
+                  <div className="space-y-2.5">
+                    {/* Header: Avatar, Name & Role */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/20 text-xs font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                          {getInitials(memberName)}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                            {memberName}
+                          </h3>
+                          {member.email && (
+                            <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                              <Mail className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                              <span className="truncate">{member.email}</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] uppercase shrink-0 font-medium capitalize"
+                      >
+                        {userRole}
+                      </Badge>
+                    </div>
+
+                    {/* Member ID Badge */}
+                    <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground flex items-center gap-1 text-[10px] uppercase font-semibold tracking-wider">
+                        <Hash className="h-3 w-3 text-primary/70 shrink-0" />
+                        <span>Member ID:</span>
+                      </span>
+                      <span className="font-mono text-[10px] bg-muted/60 px-2 py-0.5 rounded border border-border/60 text-foreground font-medium truncate max-w-[160px]">
+                        {userId || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-8 text-center text-xs text-muted-foreground">
+            {searchTerm ? (
+              <p>No members match &quot;{searchTerm}&quot;.</p>
+            ) : (
+              <div className="space-y-1">
+                <p>No members found in this organization.</p>
+                <p className="text-[11px] text-muted-foreground/80">
+                  Members added to this organization will be listed here.
                 </p>
               </div>
             )}

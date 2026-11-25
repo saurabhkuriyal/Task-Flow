@@ -3,6 +3,8 @@
 import * as React from "react";
 import { useParams } from "next/navigation";
 import { streamService, type StreamItem } from "@/services/stream.service";
+import { userService } from "@/services/user.service";
+import type { User } from "@/types/auth";
 import { useUser } from "@/context/UserContext";
 
 export interface UseStreamsOptions {
@@ -25,6 +27,7 @@ export function useStreams(options?: UseStreamsOptions) {
     "Organization";
 
   const [streams, setStreams] = React.useState<StreamItem[]>([]);
+  const [members, setMembers] = React.useState<User[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -38,15 +41,28 @@ export function useStreams(options?: UseStreamsOptions) {
   React.useEffect(() => {
     let isCancelled = false;
 
-    async function fetchStreams() {
+    async function fetchData() {
       try {
-        const res = await streamService.getStreams(currentOrgId);
+        const [streamsRes, usersRes] = await Promise.all([
+          streamService.getStreams(currentOrgId),
+          currentOrgId
+            ? userService.getUsers(currentOrgId).catch(() => ({ success: false, users: [] }))
+            : Promise.resolve({ success: false, users: [] }),
+        ]);
+
         if (!isCancelled) {
-          if (res.success && Array.isArray(res.streams)) {
-            setStreams(res.streams);
+          if (streamsRes.success && Array.isArray(streamsRes.streams)) {
+            setStreams(streamsRes.streams);
           } else {
             setStreams([]);
           }
+
+          if (usersRes.success && Array.isArray(usersRes.users)) {
+            setMembers(usersRes.users);
+          } else {
+            setMembers([]);
+          }
+
           setError(null);
           setIsLoading(false);
         }
@@ -56,12 +72,13 @@ export function useStreams(options?: UseStreamsOptions) {
             err instanceof Error ? err.message : "Failed to load streams.";
           setError(msg);
           setStreams([]);
+          setMembers([]);
           setIsLoading(false);
         }
       }
     }
 
-    fetchStreams();
+    fetchData();
 
     return () => {
       isCancelled = true;
@@ -88,6 +105,19 @@ export function useStreams(options?: UseStreamsOptions) {
       return matchName || matchDesc || matchLead || matchCreator;
     });
   }, [streams, searchTerm]);
+
+  const filteredMembers = React.useMemo(() => {
+    if (!searchTerm.trim()) return members;
+    const term = searchTerm.toLowerCase();
+    return members.filter((m) => {
+      const matchName = m.name?.toLowerCase().includes(term);
+      const matchEmail = m.email?.toLowerCase().includes(term);
+      const matchRole = m.role?.toLowerCase().includes(term);
+      const userId = m.id || m._id || "";
+      const matchId = userId.toLowerCase().includes(term);
+      return matchName || matchEmail || matchRole || matchId;
+    });
+  }, [members, searchTerm]);
 
   const departments = React.useMemo(
     () => filteredStreams.filter((s) => s.type === "department"),
@@ -134,6 +164,8 @@ export function useStreams(options?: UseStreamsOptions) {
     departments,
     projects,
     empTrackers,
+    members,
+    filteredMembers,
     isLoading,
     error,
     searchTerm,
