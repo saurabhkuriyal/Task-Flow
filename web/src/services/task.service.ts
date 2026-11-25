@@ -77,6 +77,11 @@ export interface TaskItem {
   assigneeName?: string;
   userId?: string;
   assignerName?: string;
+  assignerEmail?: string;
+  assignerRole?: string;
+  streamId?: string;
+  streamName?: string;
+  streamType?: string;
   subtaskId?: string[];
   note?: string;
   timeLogs?: ITimeLog[];
@@ -90,6 +95,49 @@ export interface GetTasksResponse {
   message?: string;
   count: number;
   tasks: TaskItem[];
+}
+
+export interface CategorizedStreamGroup {
+  streamId: string;
+  streamName: string;
+  streamType: string;
+  description?: string;
+  tasks: TaskItem[];
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  totalTimeSpent: number;
+}
+
+export interface CategorizedAssignerGroup {
+  assignerId: string;
+  assignerName: string;
+  assignerEmail?: string;
+  assignerRole?: string;
+  tasks: TaskItem[];
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  totalTimeSpent: number;
+}
+
+export interface EmployeeInfo {
+  id: string;
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  status?: string;
+}
+
+export interface GetTasksByUserResponse {
+  success: boolean;
+  message?: string;
+  count: number;
+  employee?: EmployeeInfo | null;
+  tasks: TaskItem[];
+  categorizedByStream: CategorizedStreamGroup[];
+  categorizedByAssigner: CategorizedAssignerGroup[];
 }
 
 /**
@@ -273,6 +321,32 @@ class TaskService {
         );
       }
       throw new Error("An unexpected error occurred while fetching tasks.");
+    }
+  }
+
+  /**
+   * Fetches all tasks assigned to a specific user ID, categorized by streams and assigners.
+   */
+  async getTasksByUserId(
+    userId: string,
+    orgId?: string
+  ): Promise<GetTasksByUserResponse> {
+    try {
+      const response = await axios.get<GetTasksByUserResponse>(
+        "/api/tasks/getTasksByUserId",
+        {
+          params: { userId, orgId },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to fetch user tasks."
+        );
+      }
+      throw new Error("An unexpected error occurred while fetching user tasks.");
     }
   }
 }

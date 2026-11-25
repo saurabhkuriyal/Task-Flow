@@ -13,6 +13,7 @@ import {
   ListTodo,
   Mail,
   Hash,
+  ArrowRight,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -525,11 +526,15 @@ export function StreamSections({
               const userId = member.id || member._id || "";
               const memberName = member.name || "Member";
               const userRole = member.role || "employee";
+              const taskPanelHref = `/employee/${userId}/taskpanel${
+                currentOrgId ? `?orgId=${currentOrgId}` : ""
+              }`;
 
               return (
-                <div
+                <Link
                   key={userId || member.email}
-                  className="group relative flex flex-col justify-between p-4 rounded-xl border border-border/70 bg-card hover:border-primary/50 hover:shadow-md transition-all text-left"
+                  href={taskPanelHref}
+                  className="group relative flex flex-col justify-between p-4 rounded-xl border border-border/70 bg-card hover:border-primary/50 hover:shadow-md transition-all text-left cursor-pointer"
                 >
                   <div className="space-y-2.5">
                     {/* Header: Avatar, Name & Role */}
@@ -559,18 +564,24 @@ export function StreamSections({
                       </Badge>
                     </div>
 
-                    {/* Member ID Badge */}
+                    {/* Member ID Badge & Tasks Link Prompt */}
                     <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">
                       <span className="text-muted-foreground flex items-center gap-1 text-[10px] uppercase font-semibold tracking-wider">
                         <Hash className="h-3 w-3 text-primary/70 shrink-0" />
                         <span>Member ID:</span>
                       </span>
-                      <span className="font-mono text-[10px] bg-muted/60 px-2 py-0.5 rounded border border-border/60 text-foreground font-medium truncate max-w-[160px]">
-                        {userId || "N/A"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] bg-muted/60 px-2 py-0.5 rounded border border-border/60 text-foreground font-medium truncate max-w-[120px]">
+                          {userId || "N/A"}
+                        </span>
+                        <span className="text-[10px] text-primary font-medium flex items-center gap-0.5 opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                          Tasks
+                          <ArrowRight className="h-3 w-3" />
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
