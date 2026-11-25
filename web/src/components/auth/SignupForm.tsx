@@ -82,7 +82,7 @@ export function SignupForm() {
               </div>
             )}
 
-            <form onSubmit={onSubmit} noValidate className="space-y-4">
+            <form onSubmit={onSubmit} noValidate suppressHydrationWarning className="space-y-4">
               {/* Full Name */}
               <div className="space-y-1.5">
                 <Label htmlFor="name" className="text-xs font-semibold text-foreground">
@@ -188,6 +188,7 @@ export function SignupForm() {
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showPassword ? "Hide password" : "Show password"}
+                    suppressHydrationWarning
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -224,6 +225,7 @@ export function SignupForm() {
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    suppressHydrationWarning
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4" />

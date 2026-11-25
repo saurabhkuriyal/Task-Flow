@@ -8,7 +8,7 @@ import type { TaskStatus, TaskPriority, TaskImpact, ITimeLog } from "@/models/ta
 export interface CreateTaskPayload {
   taskname: string;
   orgId: string;
-  streamId: string;
+  streamId?: string | null;
   userId: string; // Assigner ID (current user)
   status?: TaskStatus;
   priority?: TaskPriority;

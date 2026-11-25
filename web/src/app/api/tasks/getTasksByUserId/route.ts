@@ -156,9 +156,12 @@ export async function GET(req: Request) {
 
     const tasks = rawTasks.map((t) => {
       const id = String(t._id);
-      const sId = extractId(t.streamId);
+      const rawStreamId = extractId(t.streamId);
+      const isDirectTask =
+        !rawStreamId || rawStreamId === "null" || rawStreamId === "undefined";
+      const sId = isDirectTask ? "" : rawStreamId;
       const uId = extractId(t.userId);
-      const streamInfo = streamMap.get(sId);
+      const streamInfo = isDirectTask ? null : streamMap.get(sId);
       const assignerInfo = assignerMap.get(uId);
 
       const dueDateStr = t.dueDate
@@ -194,8 +197,12 @@ export async function GET(req: Request) {
         assignedId: userId,
         assigneeName: employeeName,
         streamId: sId,
-        streamName: streamInfo?.name || "General Stream",
-        streamType: streamInfo?.type || "department",
+        streamName: isDirectTask
+          ? "Direct Member Tasks (No Stream)"
+          : streamInfo?.name || "General Stream",
+        streamType: isDirectTask
+          ? "direct"
+          : streamInfo?.type || "department",
         userId: uId,
         assignerName: assignerInfo?.name || "Assigner",
         assignerEmail: assignerInfo?.email || "",
@@ -207,7 +214,7 @@ export async function GET(req: Request) {
       };
     });
 
-    // 7. Group tasks by Streams
+    // 7. Group tasks by Streams (Direct/Streamless tasks always placed at the bottom)
     const streamGroupsMap = new Map<
       string,
       {
@@ -224,14 +231,21 @@ export async function GET(req: Request) {
     >();
 
     tasks.forEach((task) => {
-      const key = task.streamId || "other";
+      const isDirect = !task.streamId;
+      const key = isDirect ? "__direct_member_tasks__" : task.streamId;
       if (!streamGroupsMap.has(key)) {
-        const streamInfo = streamMap.get(key);
+        const streamInfo = isDirect ? null : streamMap.get(key);
         streamGroupsMap.set(key, {
-          streamId: key,
-          streamName: streamInfo?.name || task.streamName || "General Stream",
-          streamType: streamInfo?.type || task.streamType || "department",
-          description: streamInfo?.description,
+          streamId: isDirect ? "" : key,
+          streamName: isDirect
+            ? "Direct Member Tasks (No Stream)"
+            : streamInfo?.name || task.streamName || "General Stream",
+          streamType: isDirect
+            ? "direct"
+            : streamInfo?.type || task.streamType || "department",
+          description: isDirect
+            ? "Tasks assigned directly to this member with no stream attached"
+            : streamInfo?.description,
           tasks: [],
           totalTasks: 0,
           completedTasks: 0,
@@ -290,7 +304,16 @@ export async function GET(req: Request) {
       group.totalTimeSpent += task.totalTimeSpent || 0;
     });
 
-    const categorizedByStream = Array.from(streamGroupsMap.values());
+    // Sort streams so that direct tasks with no stream appear at the very bottom
+    const categorizedByStream = Array.from(streamGroupsMap.values()).sort(
+      (a, b) => {
+        const aIsDirect = !a.streamId || a.streamType === "direct";
+        const bIsDirect = !b.streamId || b.streamType === "direct";
+        if (aIsDirect && !bIsDirect) return 1;
+        if (!aIsDirect && bIsDirect) return -1;
+        return 0;
+      }
+    );
     const categorizedByAssigner = Array.from(assignerGroupsMap.values());
 
     return NextResponse.json(

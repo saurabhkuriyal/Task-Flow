@@ -24,7 +24,7 @@ export interface ITimeLog {
 export interface ITask extends Document {
   taskname: string;
   orgId: mongoose.Types.ObjectId | string;
-  streamId: mongoose.Types.ObjectId | string;
+  streamId?: mongoose.Types.ObjectId | string | null;
   userId: mongoose.Types.ObjectId | string;
   status: TaskStatus;
   priority: TaskPriority;
@@ -87,7 +87,7 @@ const TaskSchema = new Schema<ITask>(
     streamId: {
       type: Schema.Types.ObjectId,
       ref: "Stream",
-      required: [true, "Stream ID is required"],
+      default: null,
       index: true,
     },
     userId: {

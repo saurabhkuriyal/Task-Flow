@@ -82,7 +82,7 @@ export function SigninForm() {
               </div>
             )}
 
-            <form onSubmit={onSubmit} noValidate className="space-y-4">
+            <form onSubmit={onSubmit} noValidate suppressHydrationWarning className="space-y-4">
               {/* Email */}
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-xs font-semibold text-foreground">
@@ -135,6 +135,7 @@ export function SigninForm() {
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showPassword ? "Hide password" : "Show password"}
+                    suppressHydrationWarning
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -152,6 +153,7 @@ export function SigninForm() {
               <button
                 type="submit"
                 disabled={isLoading || isSuccess}
+                suppressHydrationWarning
                 className={cn(
                   buttonVariants({ variant: "default", size: "default" }),
                   "w-full h-10 gap-2 text-sm font-semibold cursor-pointer shadow-xs transition-all hover:shadow-md"

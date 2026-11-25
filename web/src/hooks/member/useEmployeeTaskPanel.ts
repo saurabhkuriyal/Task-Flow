@@ -183,7 +183,14 @@ export function useEmployeeTaskPanel({
           totalTimeSpent: timeSpent,
         };
       })
-      .filter((group) => group.tasks.length > 0);
+      .filter((group) => group.tasks.length > 0)
+      .sort((a, b) => {
+        const aIsDirect = !a.streamId || a.streamType === "direct";
+        const bIsDirect = !b.streamId || b.streamType === "direct";
+        if (aIsDirect && !bIsDirect) return 1;
+        if (!aIsDirect && bIsDirect) return -1;
+        return 0;
+      });
   }, [categorizedByStream, searchTerm, statusFilter, priorityFilter]);
 
   // Filtered assigners

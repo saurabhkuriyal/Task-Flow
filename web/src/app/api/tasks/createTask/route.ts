@@ -46,16 +46,6 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!streamId || !mongoose.Types.ObjectId.isValid(streamId)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "A valid Stream ID is required.",
-        },
-        { status: 400 }
-      );
-    }
-
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return NextResponse.json(
         {
@@ -67,6 +57,11 @@ export async function POST(req: Request) {
     }
 
     // 2. Prepare task document
+    const streamObjectId =
+      streamId && mongoose.Types.ObjectId.isValid(streamId)
+        ? new mongoose.Types.ObjectId(streamId)
+        : null;
+
     const assignedObjectId =
       assignedId && mongoose.Types.ObjectId.isValid(assignedId)
         ? new mongoose.Types.ObjectId(assignedId)
@@ -80,7 +75,7 @@ export async function POST(req: Request) {
     const newTask = await TaskModel.create({
       taskname: taskname.trim(),
       orgId: new mongoose.Types.ObjectId(orgId),
-      streamId: new mongoose.Types.ObjectId(streamId),
+      streamId: streamObjectId,
       userId: new mongoose.Types.ObjectId(userId),
       status: status || "todo",
       priority: priority || "medium",
