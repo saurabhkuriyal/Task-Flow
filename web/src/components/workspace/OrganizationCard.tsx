@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/context/UserContext";
 import type { WorkspaceOrganization } from "@/types/workspace";
 
 interface OrganizationCardProps {
@@ -26,6 +27,8 @@ export function OrganizationCard({
   organization,
   onToggleFavorite,
 }: OrganizationCardProps) {
+  const { userId, role: userRole, setUser } = useUser();
+
   const {
     id,
     name,
@@ -46,6 +49,19 @@ export function OrganizationCard({
     departmentsCount = 0,
   } = organization;
 
+  const isEmployee = React.useMemo(() => {
+    const normalizedRole = userRole?.trim().toLowerCase();
+    return normalizedRole === "employee" || normalizedRole === "employees";
+  }, [userRole]);
+
+  // When role is employee, route directly to their task panel based on their user ID and this organization ID
+  const targetHref = React.useMemo(() => {
+    if (isEmployee && userId) {
+      return `/employee/${userId}/taskpanel?orgId=${id}`;
+    }
+    return `/organizations/${id}`;
+  }, [isEmployee, userId, id]);
+
   return (
     <Card className="group relative flex flex-col justify-between overflow-hidden border-border/70 bg-card/85 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl backdrop-blur-xs">
       {/* Top subtle highlight line matching org gradient */}
@@ -65,9 +81,15 @@ export function OrganizationCard({
                 {avatarText}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm sm:text-base text-foreground truncate group-hover:text-primary transition-colors">
+                <Link
+                  href={targetHref}
+                  onClick={() =>
+                    setUser({ organizationId: id, organizationName: name })
+                  }
+                  className="font-semibold text-sm sm:text-base text-foreground truncate group-hover:text-primary transition-colors block"
+                >
                   {name}
-                </h3>
+                </Link>
                 <div className="flex items-center gap-2 text-[11px] sm:text-xs text-muted-foreground truncate">
                   {gstNo ? (
                     <span className="font-mono text-primary/80 font-medium truncate">
@@ -188,7 +210,10 @@ export function OrganizationCard({
 
           {/* Enter Workspace Button */}
           <Link
-            href={`/organizations/${id}`}
+            href={targetHref}
+            onClick={() =>
+              setUser({ organizationId: id, organizationName: name })
+            }
             className="flex items-center justify-between w-full rounded-lg bg-secondary/60 hover:bg-primary hover:text-primary-foreground px-3 py-2.5 sm:py-2 text-xs font-semibold text-foreground transition-all duration-200 group/link touch-manipulation min-h-[38px] sm:min-h-[36px]"
           >
             <span>Enter Workspace</span>

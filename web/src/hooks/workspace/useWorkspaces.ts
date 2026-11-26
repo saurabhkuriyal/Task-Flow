@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { organizationService } from "@/services/organization.service";
+import { userService } from "@/services/user.service";
 import { useUser } from "@/context/UserContext";
 import type {
   WorkspaceOrganization,
@@ -85,11 +86,31 @@ function mapDocToWorkspaceOrg(
 }
 
 export function useWorkspaces() {
-  const { userId } = useUser();
+  const { userId, role, setUser } = useUser();
   const [organizations, setOrganizations] = React.useState<WorkspaceOrganization[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterRole, setFilterRole] = React.useState<"ALL" | OrganizationRole>("ALL");
+
+  // Sync role if missing from context
+  React.useEffect(() => {
+    if (userId && !role) {
+      let isCancelled = false;
+      userService
+        .getUser(userId)
+        .then((res) => {
+          if (!isCancelled && res.user?.role) {
+            setUser({ role: res.user.role });
+          }
+        })
+        .catch((err) => {
+          console.warn("Failed to sync user role in workspaces:", err);
+        });
+      return () => {
+        isCancelled = true;
+      };
+    }
+  }, [userId, role, setUser]);
 
   // Load organizations whenever userId changes
   React.useEffect(() => {

@@ -24,6 +24,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useStreamDetail } from "@/hooks/stream/useStreamDetail";
 import { useStreamTasks } from "@/hooks/task";
+import { useStreamMembers } from "@/hooks/subStream";
 import { AddStreamMemberModal } from "../stream";
 import {
   AddTaskModal,
@@ -73,20 +75,39 @@ export function SpecificStreamView() {
     enabled: Boolean(streamId),
   });
 
+  const {
+    members: streamMembers,
+    lead: streamLeadMembers,
+    manager: streamManagerMembers,
+    isLoading: isLoadingMembers,
+    refetch: refetchMembers,
+  } = useStreamMembers({
+    streamId,
+    organisationId: currentOrgId,
+    enabled: Boolean(streamId),
+  });
+
   const refetch = React.useCallback(() => {
     refetchStream();
     refetchTasks();
-  }, [refetchStream, refetchTasks]);
+    refetchMembers();
+  }, [refetchStream, refetchTasks, refetchMembers]);
 
   const isLoading = isLoadingStream;
   const error = streamError;
 
   const [activeTab, setActiveTab] = React.useState<
-    "tasks" | "team" | "about"
+    "tasks" | "memberTasks" | "team" | "about"
   >("tasks");
   const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false);
+  const [prefilledMemberId, setPrefilledMemberId] = React.useState<
+    string | undefined
+  >(undefined);
   const openAddTask = React.useCallback(() => setIsAddTaskOpen(true), []);
-  const closeAddTask = React.useCallback(() => setIsAddTaskOpen(false), []);
+  const closeAddTask = React.useCallback(() => {
+    setIsAddTaskOpen(false);
+    setPrefilledMemberId(undefined);
+  }, []);
 
   // Modals for task row actions: View, Edit, Delete
   const [viewingTask, setViewingTask] = React.useState<TaskItem | null>(null);
@@ -269,6 +290,213 @@ export function SpecificStreamView() {
         );
     }
   };
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds || seconds <= 0) return "-";
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  interface UnifiedMember {
+    id: string;
+    name: string;
+    email?: string;
+    role: "Lead" | "Manager" | "Member" | "Assignee" | "Unassigned";
+  }
+
+  const unifiedMembers = React.useMemo(() => {
+    const map = new Map<string, UnifiedMember>();
+
+    const normalizeId = (raw: unknown): string => {
+      if (!raw) return "";
+      if (typeof raw === "object" && raw !== null) {
+        const obj = raw as { _id?: unknown; id?: unknown };
+        return String(obj._id || obj.id || "").trim();
+      }
+      return String(raw).trim();
+    };
+
+    // 1. Lead
+    const leadObj = streamLeadMembers?.[0] || stream?.lead?.[0];
+    const lId = normalizeId(leadObj?.id || currentLeadId);
+    if (lId && lId !== "[object Object]" && lId !== "undefined") {
+      map.set(lId, {
+        id: lId,
+        name:
+          leadObj?.name ||
+          leadName ||
+          (streamType === "project" ? "Project Lead" : "Stream Lead"),
+        email: leadObj?.email,
+        role: "Lead",
+      });
+    }
+
+    // 2. Manager
+    const mgrObj = streamManagerMembers?.[0] || stream?.manager?.[0];
+    const mId = normalizeId(mgrObj?.id || currentManagerId);
+    if (mId && mId !== "[object Object]" && mId !== "undefined" && !map.has(mId)) {
+      map.set(mId, {
+        id: mId,
+        name: mgrObj?.name || managerName || "Stream Manager",
+        email: mgrObj?.email,
+        role: "Manager",
+      });
+    }
+
+    // 3. API Members
+    if (Array.isArray(streamMembers)) {
+      streamMembers.forEach((sm) => {
+        const smId = normalizeId(sm.memberId || sm.assigneeId);
+        if (smId && smId !== "[object Object]" && smId !== "undefined" && !map.has(smId)) {
+          map.set(smId, {
+            id: smId,
+            name: sm.name || sm.assigneeName || "Stream Member",
+            email: sm.email,
+            role: "Member",
+          });
+        }
+      });
+    }
+
+    // 4. Stream Prop Members
+    if (Array.isArray(stream?.members)) {
+      stream.members.forEach((sm) => {
+        const smId = normalizeId(sm.memberId || sm.assigneeId);
+        if (smId && smId !== "[object Object]" && smId !== "undefined" && !map.has(smId)) {
+          map.set(smId, {
+            id: smId,
+            name: sm.memberName || sm.assigneeName || "Stream Member",
+            role: "Member",
+          });
+        }
+      });
+    }
+
+    // 5. Assignees from tasks
+    tasks.forEach((t) => {
+      const aId = normalizeId(t.assignedId);
+      if (aId && aId !== "[object Object]" && aId !== "undefined") {
+        if (!map.has(aId)) {
+          map.set(aId, {
+            id: aId,
+            name: t.assigneeName || "Assigned Member",
+            role: "Assignee",
+          });
+        } else if (t.assigneeName && map.get(aId)!.name === "Stream Member") {
+          map.get(aId)!.name = t.assigneeName;
+        }
+      }
+    });
+
+    if (isEmpTracker && map.size === 0 && streamId) {
+      map.set(streamId, {
+        id: streamId,
+        name: stream?.name || "Tracked Employee",
+        role: "Assignee",
+      });
+    }
+
+    return Array.from(map.values());
+  }, [
+    stream,
+    streamLeadMembers,
+    currentLeadId,
+    leadName,
+    streamType,
+    streamManagerMembers,
+    currentManagerId,
+    managerName,
+    streamMembers,
+    tasks,
+    isEmpTracker,
+    streamId,
+  ]);
+
+  const tasksByMemberMap = React.useMemo(() => {
+    const map = new Map<string, TaskItem[]>();
+    tasks.forEach((task) => {
+      const key = task.assignedId ? String(task.assignedId).trim() : "__unassigned__";
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(task);
+    });
+    return map;
+  }, [tasks]);
+
+  const unassignedTasks = React.useMemo(() => {
+    return tasksByMemberMap.get("__unassigned__") || [];
+  }, [tasksByMemberMap]);
+
+  const [selectedMemberId, setSelectedMemberId] = React.useState<string>("");
+  const [memberSearchTerm, setMemberSearchTerm] = React.useState<string>("");
+
+  const activeSelectedMemberId = React.useMemo(() => {
+    if (selectedMemberId === "__unassigned__" && unassignedTasks.length > 0) {
+      return "__unassigned__";
+    }
+    if (
+      selectedMemberId &&
+      unifiedMembers.some((m) => m.id === selectedMemberId)
+    ) {
+      return selectedMemberId;
+    }
+    if (unifiedMembers.length > 0) {
+      return unifiedMembers[0].id;
+    }
+    if (unassignedTasks.length > 0) {
+      return "__unassigned__";
+    }
+    return "";
+  }, [selectedMemberId, unifiedMembers, unassignedTasks.length]);
+
+  const filteredStreamMembers = React.useMemo(() => {
+    if (!memberSearchTerm.trim()) return unifiedMembers;
+    const term = memberSearchTerm.toLowerCase();
+    return unifiedMembers.filter(
+      (m) =>
+        m.name.toLowerCase().includes(term) ||
+        (m.email && m.email.toLowerCase().includes(term)) ||
+        m.role.toLowerCase().includes(term)
+    );
+  }, [unifiedMembers, memberSearchTerm]);
+
+  const isSelectedUnassigned = activeSelectedMemberId === "__unassigned__";
+  const selectedMember = React.useMemo(() => {
+    if (isSelectedUnassigned) {
+      return {
+        id: "__unassigned__",
+        name: "Unassigned Tasks",
+        role: "Unassigned" as const,
+      };
+    }
+    return (
+      unifiedMembers.find((m) => m.id === activeSelectedMemberId) || null
+    );
+  }, [activeSelectedMemberId, isSelectedUnassigned, unifiedMembers]);
+
+  const currentMemberTasks = React.useMemo(() => {
+    if (!activeSelectedMemberId) return [];
+    return tasksByMemberMap.get(activeSelectedMemberId) || [];
+  }, [activeSelectedMemberId, tasksByMemberMap]);
+
+  const memberCompletedCount = React.useMemo(
+    () => currentMemberTasks.filter((t) => t.status === "completed").length,
+    [currentMemberTasks]
+  );
+  const memberInProgressCount = React.useMemo(
+    () => currentMemberTasks.filter((t) => t.status === "in_progress").length,
+    [currentMemberTasks]
+  );
+  const memberTodoCount = React.useMemo(
+    () =>
+      currentMemberTasks.filter(
+        (t) => t.status === "todo" || t.status === "backlog"
+      ).length,
+    [currentMemberTasks]
+  );
 
   return (
     <div className="py-6 px-4 sm:px-8 max-w-6xl mx-auto space-y-6">
@@ -589,26 +817,51 @@ export function SpecificStreamView() {
         )}
       </div>
 
-      {/* 3. Navigation Tabs: Tasks vs Team vs Details */}
-      <div className="flex items-center gap-2 border-b border-border/60 pb-1">
+      {/* 3. Navigation Tabs: Tasks vs Employee-wise Tasks vs Team vs Details */}
+      <div className="flex items-center gap-2 border-b border-border/60 pb-1 flex-wrap">
         <button
           type="button"
           onClick={() => setActiveTab("tasks")}
-          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === "tasks"
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            activeTab === "tasks"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+          }`}
         >
           <ListTodo className="h-4 w-4" />
           <span>Tasks</span>
           <Badge
             variant={activeTab === "tasks" ? "outline" : "secondary"}
-            className={`text-[10px] h-4 px-1.5 ${activeTab === "tasks"
-              ? "border-primary-foreground/30 text-primary-foreground"
-              : ""
-              }`}
+            className={`text-[10px] h-4 px-1.5 ${
+              activeTab === "tasks"
+                ? "border-primary-foreground/30 text-primary-foreground"
+                : ""
+            }`}
           >
             {tasks.length}
+          </Badge>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("memberTasks")}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            activeTab === "memberTasks"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          <span>Employee-wise Tasks</span>
+          <Badge
+            variant={activeTab === "memberTasks" ? "outline" : "secondary"}
+            className={`text-[10px] h-4 px-1.5 ${
+              activeTab === "memberTasks"
+                ? "border-primary-foreground/30 text-primary-foreground"
+                : ""
+            }`}
+          >
+            {unifiedMembers.length}
           </Badge>
         </button>
 
@@ -826,6 +1079,478 @@ export function SpecificStreamView() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB: EMPLOYEE-WISE TASKS (Master-Detail) */}
+      {activeTab === "memberTasks" && (
+        <div className="rounded-2xl border border-border/70 bg-card shadow-sm overflow-hidden">
+          {/* Header Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b border-border/60 bg-muted/10">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Users className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">
+                  Employee-wise Stream Tasks
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  View and manage tasks filtered by each member of this stream
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="text-xs px-2.5 py-1 font-medium bg-background"
+              >
+                {unifiedMembers.length}{" "}
+                {unifiedMembers.length === 1 ? "Member" : "Members"} •{" "}
+                {tasks.length} {tasks.length === 1 ? "Task" : "Tasks"}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Master-Detail 2-Column Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[520px]">
+            {/* Left Column: Member Master List (4 of 12 cols on desktop) */}
+            <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-border/60 bg-muted/5 flex flex-col">
+              {/* Member Search */}
+              <div className="p-3 border-b border-border/60 bg-background/50">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Filter stream members..."
+                    value={memberSearchTerm}
+                    onChange={(e) => setMemberSearchTerm(e.target.value)}
+                    className="pl-8 text-xs h-8 rounded-lg bg-background"
+                  />
+                </div>
+              </div>
+
+              {/* Members List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-border/40 max-h-[600px]">
+                {isLoadingMembers && unifiedMembers.length === 0 ? (
+                  <div className="p-4 space-y-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 animate-pulse"
+                      >
+                        <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+                        <div className="space-y-1.5 flex-1">
+                          <Skeleton className="h-3.5 w-24" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredStreamMembers.length > 0 ? (
+                  <>
+                    {filteredStreamMembers.map((member) => {
+                      const isSelected = activeSelectedMemberId === member.id;
+                      const memberTasks = tasksByMemberMap.get(member.id) || [];
+                      const completedCount = memberTasks.filter(
+                        (t) => t.status === "completed"
+                      ).length;
+
+                      return (
+                        <button
+                          key={member.id}
+                          type="button"
+                          onClick={() => setSelectedMemberId(member.id)}
+                          className={`w-full text-left p-3.5 flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-primary/10 border-l-4 border-primary text-foreground shadow-2xs"
+                              : "hover:bg-muted/40 text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Initials Avatar */}
+                            <div
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-xs transition-colors ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground shadow-xs"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {getInitials(member.name)}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-xs truncate">
+                                  {member.name}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[9px] px-1.5 py-0 uppercase font-semibold shrink-0 ${
+                                    member.role === "Lead"
+                                      ? "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                      : member.role === "Manager"
+                                      ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
+                                      : member.role === "Member"
+                                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                      : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                  }`}
+                                >
+                                  {member.role}
+                                </Badge>
+                              </div>
+                              {member.email ? (
+                                <p className="text-[11px] text-muted-foreground truncate">
+                                  {member.email}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-muted-foreground/60 font-mono">
+                                  ID: {member.id.slice(0, 8)}...
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Task Badge count */}
+                          <div className="text-right shrink-0">
+                            <Badge
+                              variant={isSelected ? "default" : "secondary"}
+                              className="text-[10px] h-5 px-1.5 font-medium"
+                            >
+                              {memberTasks.length}{" "}
+                              {memberTasks.length === 1 ? "task" : "tasks"}
+                            </Badge>
+                            {memberTasks.length > 0 && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5 font-medium">
+                                {completedCount}/{memberTasks.length} done
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                    {/* Unassigned Tasks pseudo-member if any exist */}
+                    {unassignedTasks.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMemberId("__unassigned__")}
+                        className={`w-full text-left p-3.5 flex items-center justify-between gap-3 transition-all cursor-pointer border-t border-dashed border-border/70 ${
+                          activeSelectedMemberId === "__unassigned__"
+                            ? "bg-amber-500/10 border-l-4 border-amber-500 text-foreground"
+                            : "hover:bg-muted/40 text-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-xs ${
+                              activeSelectedMemberId === "__unassigned__"
+                                ? "bg-amber-500 text-white"
+                                : "bg-amber-500/10 text-amber-600"
+                            }`}
+                          >
+                            <AlertCircle className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-xs text-foreground truncate block">
+                              Unassigned Tasks
+                            </span>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              Tasks with no assigned stream member
+                            </p>
+                          </div>
+                        </div>
+
+                        <Badge
+                          variant="secondary"
+                          className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[10px] h-5 px-1.5 font-medium shrink-0"
+                        >
+                          {unassignedTasks.length} tasks
+                        </Badge>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-8 text-center text-muted-foreground space-y-2">
+                    <User className="h-7 w-7 mx-auto opacity-40" />
+                    <p className="text-xs font-medium">No members found</p>
+                    <p className="text-[11px]">
+                      {memberSearchTerm
+                        ? "Try clearing your member search term."
+                        : "No members currently enrolled in this stream."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Detail Panel for Selected Member Tasks (8 of 12 cols on desktop) */}
+            <div className="lg:col-span-8 flex flex-col bg-card">
+              {selectedMember ? (
+                <>
+                  {/* Selected Member Header Card */}
+                  <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/5 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-bold text-sm shadow-xs ${
+                            isSelectedUnassigned
+                              ? "bg-amber-500 text-white"
+                              : "bg-primary text-primary-foreground"
+                          }`}
+                        >
+                          {isSelectedUnassigned ? (
+                            <AlertCircle className="h-5 w-5" />
+                          ) : (
+                            getInitials(selectedMember.name)
+                          )}
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
+                              {selectedMember.name}
+                            </h3>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-2 py-0 uppercase font-semibold ${
+                                selectedMember.role === "Lead"
+                                  ? "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                  : selectedMember.role === "Manager"
+                                  ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
+                                  : selectedMember.role === "Member"
+                                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                  : selectedMember.role === "Unassigned"
+                                  ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                  : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                              }`}
+                            >
+                              {selectedMember.role}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                            {selectedMember.email && (
+                              <span>{selectedMember.email}</span>
+                            )}
+                            {selectedMember.email &&
+                              !isSelectedUnassigned && <span>•</span>}
+                            {!isSelectedUnassigned && (
+                              <span className="font-mono text-muted-foreground/70">
+                                ID: {selectedMember.id}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Header Actions */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {!isSelectedUnassigned && (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                setPrefilledMemberId(selectedMember.id);
+                                openAddTask();
+                              }}
+                              className="text-xs h-8 gap-1.5 cursor-pointer font-medium"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Assign Task</span>
+                            </Button>
+
+                            <Link
+                              href={`/employee/${selectedMember.id}/taskpanel?orgId=${currentOrgId || ""}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border/80 hover:bg-muted/70 text-foreground transition-colors cursor-pointer"
+                              title="Open global task panel for this employee"
+                            >
+                              <span>Employee Panel</span>
+                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                            </Link>
+                          </>
+                        )}
+                        {isSelectedUnassigned && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={openAddTask}
+                            className="text-xs h-8 gap-1.5 cursor-pointer font-medium"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            <span>Create Task</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Task Progress & Metrics Chips */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <div className="p-2.5 rounded-xl border border-border/60 bg-background/60">
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">
+                          Total Tasks
+                        </span>
+                        <p className="text-sm font-bold text-foreground">
+                          {currentMemberTasks.length}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl border border-border/60 bg-background/60">
+                        <span className="text-[10px] uppercase font-semibold text-emerald-600">
+                          Completed
+                        </span>
+                        <p className="text-sm font-bold text-emerald-600">
+                          {memberCompletedCount}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl border border-border/60 bg-background/60">
+                        <span className="text-[10px] uppercase font-semibold text-amber-600">
+                          In Progress
+                        </span>
+                        <p className="text-sm font-bold text-amber-600">
+                          {memberInProgressCount}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl border border-border/60 bg-background/60">
+                        <span className="text-[10px] uppercase font-semibold text-sky-600">
+                          To Do
+                        </span>
+                        <p className="text-sm font-bold text-sky-600">
+                          {memberTodoCount}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tasks Table for this member */}
+                  <div className="flex-1 overflow-x-auto">
+                    {currentMemberTasks.length > 0 ? (
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-muted/30 text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border/60">
+                          <tr>
+                            <th className="py-3 px-4 font-semibold">Title</th>
+                            <th className="py-3 px-4 font-semibold">Status</th>
+                            <th className="py-3 px-4 font-semibold">Priority</th>
+                            <th className="py-3 px-4 font-semibold">Assigner</th>
+                            <th className="py-3 px-4 font-semibold">Due Date</th>
+                            <th className="py-3 px-4 font-semibold">Time Logged</th>
+                            <th className="py-3 px-4 font-semibold text-right">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/50 text-foreground">
+                          {currentMemberTasks.map((task) => (
+                            <tr
+                              key={task.id}
+                              className="hover:bg-muted/30 transition-colors"
+                            >
+                              <td className="py-3 px-4 font-medium truncate max-w-xs text-foreground">
+                                <div>
+                                  <span className="font-semibold block truncate">
+                                    {task.title || task.taskname}
+                                  </span>
+                                  {task.description && (
+                                    <span className="text-[11px] text-muted-foreground truncate block max-w-xs">
+                                      {task.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                {getStatusBadge(task.status)}
+                              </td>
+                              <td className="py-3 px-4">
+                                {getPriorityBadge(task.priority)}
+                              </td>
+                              <td className="py-3 px-4 text-muted-foreground">
+                                {task.assignerName || "Admin"}
+                              </td>
+                              <td className="py-3 px-4 text-muted-foreground whitespace-nowrap">
+                                {task.dueDate || "-"}
+                              </td>
+                              <td className="py-3 px-4 text-muted-foreground whitespace-nowrap">
+                                {formatDuration(task.totalTimeSpent)}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setViewingTask(task)}
+                                    title="View Task Details & Time Tracker"
+                                    className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md cursor-pointer transition-colors"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setEditingTask(task)}
+                                    title="Edit Task"
+                                    className="h-7 w-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded-md cursor-pointer transition-colors"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setDeletingTask(task)}
+                                    title="Delete Task"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer transition-colors"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="py-16 px-4 text-center space-y-3">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+                          <ListTodo className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-semibold text-foreground">
+                            No tasks assigned in this stream
+                          </h4>
+                          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                            {isSelectedUnassigned
+                              ? "All tasks in this stream have been assigned to members."
+                              : `There are currently no tasks assigned to ${selectedMember.name} in this stream.`}
+                          </p>
+                          {!isSelectedUnassigned && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                setPrefilledMemberId(selectedMember.id);
+                                openAddTask();
+                              }}
+                              className="text-xs h-8.5 gap-1.5 cursor-pointer mt-3"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Assign First Task</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="py-20 px-4 text-center space-y-3">
+                  <Users className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Select a member from the left to view their tasks in this stream
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1090,6 +1815,7 @@ export function SpecificStreamView() {
         stream={stream}
         streamId={streamId}
         organisationId={currentOrgId}
+        initialAssignedId={prefilledMemberId}
       />
 
       <ViewTaskModal

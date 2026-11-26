@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/utils/db";
 import { TaskModel } from "@/models/tasks.model";
+import { autoCreateRecurringTask } from "@/utils/recurringTask";
 
 export async function PUT(req: Request) {
   try {
@@ -24,6 +25,9 @@ export async function PUT(req: Request) {
       );
     }
 
+    const isTransitioningToCompleted =
+      updates.status === "completed" && task.status !== "completed";
+
     if (updates.taskname !== undefined) task.taskname = String(updates.taskname).trim();
     if (updates.description !== undefined) task.description = String(updates.description).trim();
     if (updates.status !== undefined) task.status = updates.status;
@@ -43,13 +47,25 @@ export async function PUT(req: Request) {
           : null;
     }
 
+    let autoCreatedTask = null;
+
+    // When a recurring task is completed, auto-create the next iteration in the database
+    if (isTransitioningToCompleted && task.recurring) {
+      autoCreatedTask = await autoCreateRecurringTask(task);
+      // Mark original completed task as non-recurring so only the new task is active
+      task.recurring = false;
+    }
+
     await task.save();
 
     return NextResponse.json(
       {
         success: true,
-        message: "Task updated successfully.",
+        message: autoCreatedTask
+          ? "Task completed and next recurring task auto-created successfully."
+          : "Task updated successfully.",
         data: task,
+        autoCreatedTask,
       },
       { status: 200 }
     );

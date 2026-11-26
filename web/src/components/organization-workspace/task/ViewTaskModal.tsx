@@ -72,6 +72,8 @@ export function ViewTaskModal({
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = React.useState(false);
   const [noteMessage, setNoteMessage] = React.useState<string | null>(null);
+  const [isGeneratingRecurring, setIsGeneratingRecurring] = React.useState(false);
+  const [recurringMessage, setRecurringMessage] = React.useState<string | null>(null);
 
   if (!isOpen || !task) return null;
 
@@ -82,16 +84,40 @@ export function ViewTaskModal({
     setStatusMessage(null);
 
     try {
-      await taskService.updateTask(taskId, { status: newStatus }).catch((err) => {
+      const res = await taskService.updateTask(taskId, { status: newStatus }).catch((err) => {
         console.info("Status updated locally (backend API pending):", err?.message);
+        return null;
       });
-      setStatusMessage("Status updated!");
+      if (res?.autoCreatedTask) {
+        setStatusMessage("Completed! Next recurring task iteration auto-created.");
+      } else {
+        setStatusMessage("Status updated!");
+      }
       onTaskUpdated?.();
-      setTimeout(() => setStatusMessage(null), 2500);
+      setTimeout(() => setStatusMessage(null), 3500);
     } catch {
       // Retain optimistic state
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleGenerateRecurring = async () => {
+    setIsGeneratingRecurring(true);
+    setRecurringMessage(null);
+    try {
+      const res = await taskService.autoCreateRecurring({ taskId });
+      if (res.success) {
+        setRecurringMessage("New recurring copy auto-created successfully!");
+        onTaskUpdated?.();
+        setTimeout(() => setRecurringMessage(null), 3500);
+      } else {
+        setRecurringMessage(res.message || "Failed to create recurring copy.");
+      }
+    } catch (err) {
+      setRecurringMessage(err instanceof Error ? err.message : "Failed to auto-create recurring copy.");
+    } finally {
+      setIsGeneratingRecurring(false);
     }
   };
 
@@ -421,6 +447,46 @@ export function ViewTaskModal({
               </div>
             )}
           </div>
+
+          {/* Recurring Task Details & Action */}
+          {task.recurring && (
+            <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-3.5 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    <Repeat className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-foreground text-xs">Recurring Task Active</span>
+                    <p className="text-[11px] text-muted-foreground">
+                      Completing this task automatically spawns the next cycle with identical assignees, notes, and priority.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateRecurring}
+                  disabled={isGeneratingRecurring}
+                  className="text-[11px] h-7 px-2.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 cursor-pointer shrink-0 self-start sm:self-auto"
+                >
+                  {isGeneratingRecurring ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                  ) : (
+                    <Repeat className="h-3 w-3 mr-1" />
+                  )}
+                  Auto-create Copy
+                </Button>
+              </div>
+              {recurringMessage && (
+                <div className="flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 p-2 text-[11px] text-purple-600 dark:text-purple-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                  <span>{recurringMessage}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 3. Interactive Quick Status Updater */}
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">

@@ -52,6 +52,7 @@ export interface TaskResponse {
   success: boolean;
   message: string;
   data?: unknown;
+  autoCreatedTask?: TaskItem | null;
 }
 
 export interface TimeLogsResponse {
@@ -197,6 +198,46 @@ class TaskService {
         );
       }
       throw new Error("An unexpected error occurred while updating task.");
+    }
+  }
+
+  /**
+   * Auto-creates the next iteration for recurring tasks.
+   */
+  async autoCreateRecurring(payload: {
+    taskId?: string;
+    orgId?: string;
+    streamId?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    count?: number;
+    task?: TaskItem;
+    tasks?: TaskItem[];
+  }> {
+    try {
+      const response = await axios.post(
+        "/api/tasks/autoCreateRecurring",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage ||
+            error.message ||
+            "Failed to auto-create recurring task."
+        );
+      }
+      throw new Error(
+        "An unexpected error occurred while auto-creating recurring task."
+      );
     }
   }
 

@@ -14,6 +14,7 @@ import {
   CheckSquare,
   FileText,
   StickyNote,
+  Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ export function CreateEmployeeTaskModal({
   const [priority, setPriority] = React.useState<TaskPriority>("medium");
   const [impact, setImpact] = React.useState<TaskImpact>("medium");
   const [status, setStatus] = React.useState<TaskStatus>("todo");
+  const [recurring, setRecurring] = React.useState(false);
   const [dueDate, setDueDate] = React.useState("");
   const [note, setNote] = React.useState("");
 
@@ -69,6 +71,7 @@ export function CreateEmployeeTaskModal({
     setPriority("medium");
     setImpact("medium");
     setStatus("todo");
+    setRecurring(false);
     setDueDate("");
     setNote("");
     setError(null);
@@ -111,7 +114,7 @@ export function CreateEmployeeTaskModal({
         status,
         priority,
         impact,
-        recurring: false,
+        recurring,
         dueDate: dueDate ? dueDate : null,
         description: description.trim(),
         note: note.trim(),
@@ -315,8 +318,8 @@ export function CreateEmployeeTaskModal({
             </div>
           </div>
 
-          {/* Due Date & Initial Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Due Date & Recurring */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
             {/* Due Date */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground flex items-center gap-1">
@@ -331,22 +334,46 @@ export function CreateEmployeeTaskModal({
               />
             </div>
 
-            {/* Status */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">
-                Initial Status
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            {/* Recurring Toggle Switch */}
+            <div className="p-2 rounded-xl border border-border/70 bg-muted/20 flex items-center justify-between h-9">
+              <div className="flex items-center gap-1.5">
+                <Repeat className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium text-foreground">Recurring</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={recurring}
+                onClick={() => setRecurring(!recurring)}
+                disabled={isSubmitting || isSuccess}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                  recurring ? "bg-primary" : "bg-muted-foreground/30"
+                }`}
               >
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="backlog">Backlog</option>
-                <option value="in_review">In Review</option>
-              </select>
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    recurring ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
+          </div>
+
+          {/* Initial Status */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">
+              Initial Status
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="backlog">Backlog</option>
+              <option value="in_review">In Review</option>
+            </select>
           </div>
 
           {/* Note */}

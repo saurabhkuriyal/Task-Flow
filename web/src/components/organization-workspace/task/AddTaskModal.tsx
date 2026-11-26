@@ -29,6 +29,7 @@ export interface AddTaskModalProps {
   stream?: StreamItem | null;
   streamId?: string;
   organisationId?: string;
+  initialAssignedId?: string;
 }
 
 export function AddTaskModal({
@@ -38,6 +39,7 @@ export function AddTaskModal({
   stream,
   streamId,
   organisationId,
+  initialAssignedId,
 }: AddTaskModalProps) {
   const {
     assignerName,
@@ -72,6 +74,7 @@ export function AddTaskModal({
     stream,
     streamId,
     organisationId,
+    initialAssignedId,
   });
 
   if (!isOpen) return null;

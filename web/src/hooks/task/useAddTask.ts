@@ -20,6 +20,7 @@ export interface UseAddTaskOptions {
   stream?: StreamItem | null;
   streamId?: string;
   organisationId?: string;
+  initialAssignedId?: string;
 }
 
 function extractId(val: unknown): string {
@@ -37,6 +38,7 @@ export function useAddTask({
   stream,
   streamId,
   organisationId,
+  initialAssignedId,
 }: UseAddTaskOptions) {
   const { userId, organizationId: contextOrgId, userName } = useUser();
 
@@ -70,7 +72,19 @@ export function useAddTask({
   const [recurring, setRecurring] = React.useState(false);
   const [dueDate, setDueDate] = React.useState("");
   const [note, setNote] = React.useState("");
-  const [assignedId, setAssignedId] = React.useState("");
+  const [assignedId, setAssignedId] = React.useState(initialAssignedId || "");
+
+  const [prevInitialAssignedId, setPrevInitialAssignedId] =
+    React.useState(initialAssignedId);
+  const [prevIsOpen, setPrevIsOpen] = React.useState(isOpen);
+
+  if (isOpen !== prevIsOpen || initialAssignedId !== prevInitialAssignedId) {
+    setPrevIsOpen(isOpen);
+    setPrevInitialAssignedId(initialAssignedId);
+    if (isOpen) {
+      setAssignedId(initialAssignedId || "");
+    }
+  }
 
   // Effective assigned ID automatically resolves to the tracked employee for empTracker streams
   const effectiveAssignedId = isEmpTracker ? trackedEmployeeId : assignedId;
