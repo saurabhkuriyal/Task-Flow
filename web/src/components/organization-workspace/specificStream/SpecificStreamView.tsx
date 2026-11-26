@@ -39,7 +39,7 @@ import {
   DeleteTaskModal,
 } from "../task";
 import type { TaskItem } from "@/services/task.service";
-import { StreamMembersView, SpecificEmployeeStreamsView } from "@/components/subStream";
+import { StreamMembersView } from "@/components/subStream";
 
 export function SpecificStreamView() {
   const {
@@ -82,7 +82,7 @@ export function SpecificStreamView() {
   const error = streamError;
 
   const [activeTab, setActiveTab] = React.useState<
-    "tasks" | "team" | "trackers" | "about"
+    "tasks" | "team" | "about"
   >("tasks");
   const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false);
   const openAddTask = React.useCallback(() => setIsAddTaskOpen(true), []);
@@ -642,20 +642,6 @@ export function SpecificStreamView() {
           )}
         </button>
 
-        {!isEmpTracker && (
-          <button
-            type="button"
-            onClick={() => setActiveTab("trackers")}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === "trackers"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              }`}
-          >
-            <UserCheck className="h-4 w-4" />
-            <span>Employee Trackers</span>
-          </button>
-        )}
-
         <button
           type="button"
           onClick={() => setActiveTab("about")}
@@ -1017,29 +1003,11 @@ export function SpecificStreamView() {
               onAddMember={openAddMember}
               isEmpTracker={isEmpTracker}
             />
-
-            {/* Employee Trackers of this specific stream */}
-            {!isEmpTracker && (
-              <SpecificEmployeeStreamsView
-                streamId={streamId}
-                organisationId={currentOrgId}
-                isEmpTracker={isEmpTracker}
-              />
-            )}
           </div>
         )
       )}
 
-      {/* TAB C: EMPLOYEE TRACKERS DEDICATED VIEW */}
-      {!isEmpTracker && activeTab === "trackers" && (
-        <SpecificEmployeeStreamsView
-          streamId={streamId}
-          organisationId={currentOrgId}
-          isEmpTracker={isEmpTracker}
-        />
-      )}
-
-      {/* TAB D: OVERVIEW & DETAILS */}
+      {/* TAB C: OVERVIEW & DETAILS */}
       {activeTab === "about" && (
         <div className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6 space-y-5 shadow-sm">
           <div className="flex items-center gap-2.5 pb-3 border-b border-border/60">

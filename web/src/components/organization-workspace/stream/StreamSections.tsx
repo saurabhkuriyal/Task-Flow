@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import {
   Building2,
   FolderKanban,
-  UserCheck,
   User,
   Plus,
   Calendar,
@@ -25,7 +24,6 @@ export interface StreamSectionsProps {
   isLoading?: boolean;
   departments?: StreamItem[];
   projects?: StreamItem[];
-  empTrackers?: StreamItem[];
   members?: UserType[];
   searchTerm?: string;
   orgId?: string;
@@ -37,7 +35,6 @@ export function StreamSections({
   isLoading = true,
   departments = [],
   projects = [],
-  empTrackers = [],
   members = [],
   searchTerm = "",
   orgId,
@@ -366,117 +363,7 @@ export function StreamSections({
         )}
       </div>
 
-      {/* 3. Employee Tracker Section */}
-      <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/60">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <UserCheck className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Employee Tracker
-                </h2>
-                {!isLoading && (
-                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">
-                    {empTrackers.length}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Activity logs, productivity metrics, and work allocation
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Shadow Loading for Employee Tracker */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Array.from({ length: 3 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3.5 rounded-lg border border-border/60 bg-muted/20 animate-pulse"
-              >
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-8 w-8 rounded-full shrink-0" />
-                  <div className="space-y-1.5">
-                    <Skeleton className="h-3.5 w-28" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                </div>
-                <Skeleton className="h-4 w-16 rounded-full" />
-              </div>
-            ))}
-          </div>
-        ) : empTrackers.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {empTrackers.map((emp) => {
-              const employeeName = emp.lead?.[0]?.name || emp.name;
-              const creatorName = emp.creator?.[0]?.name;
-              const dateCreated = formatDate(emp.createdAt);
-
-              const streamId = emp._id || emp.id || emp.name;
-              const streamHref = currentOrgId
-                ? `/organizations/${currentOrgId}/streams/${streamId}`
-                : `/organizations/streams/${streamId}`;
-
-              return (
-                <Link
-                  key={streamId}
-                  href={streamHref}
-                  className="group relative flex items-center justify-between p-3.5 rounded-xl border border-border/70 bg-card hover:border-primary/50 hover:shadow-md transition-all text-left cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-semibold text-emerald-600">
-                      {getInitials(employeeName)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                        {employeeName}
-                      </p>
-                      <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                        {creatorName && (
-                          <span className="text-muted-foreground/80">
-                            By: {creatorName}
-                          </span>
-                        )}
-                        {creatorName && dateCreated && <span>•</span>}
-                        {dateCreated && (
-                          <span className="flex items-center gap-1 text-muted-foreground/70">
-                            <Calendar className="h-3 w-3 shrink-0" />
-                            <span>Since {dateCreated}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <Badge variant="outline" className="text-[10px] uppercase shrink-0 ml-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
-                    Active
-                  </Badge>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-8 text-center text-xs text-muted-foreground">
-            {searchTerm ? (
-              <p>No tracked employees match &quot;{searchTerm}&quot;.</p>
-            ) : (
-              <div className="space-y-1">
-                <p>No tracked employee data available yet.</p>
-                <p className="text-[11px] text-muted-foreground/80">
-                  Tracked employees are automatically created when members are added to departments and projects.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 4. Employee Tasks Section */}
+      {/* 3. Employee Tasks Section */}
       <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/60">
           <div className="flex items-center gap-2">

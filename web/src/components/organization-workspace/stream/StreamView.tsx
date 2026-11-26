@@ -12,7 +12,6 @@ export function StreamView() {
   const {
     departments,
     projects,
-    empTrackers,
     filteredMembers,
     searchTerm,
     setSearchTerm,
@@ -49,7 +48,6 @@ export function StreamView() {
         isLoading={isLoading}
         departments={departments}
         projects={projects}
-        empTrackers={empTrackers}
         members={filteredMembers}
         searchTerm={searchTerm}
         orgId={currentOrgId}
