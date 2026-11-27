@@ -23,30 +23,52 @@ export function formatSecondsToHHMMSS(totalSeconds: number): string {
 
 export interface UseTimeLogOptions {
   taskId: string;
+  fallbackUserId?: string;
   initialTotalTimeSpent?: number; // in seconds
   initialTimeLogs?: ITimeLog[];
   onTimeSaved?: (newTotal: number) => void;
 }
 
+function getElapsedSecondsFromStart(startTime?: string | Date | null): number {
+  if (!startTime) return 0;
+  const startMs = new Date(startTime).getTime();
+  if (!Number.isFinite(startMs)) return 0;
+  return Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+}
+
 export function useTimeLog({
   taskId,
+  fallbackUserId,
   initialTotalTimeSpent = 0,
   initialTimeLogs = [],
   onTimeSaved,
 }: UseTimeLogOptions) {
-  const { userId } = useUser();
+  const { userId: contextUserId } = useUser();
+  const effectiveUserId = contextUserId || fallbackUserId || "";
 
   // Find if a timer session is already running from the initial logs
   const activeExistingLog = React.useMemo(() => {
     return initialTimeLogs.find((log) => log.isRunning);
   }, [initialTimeLogs]);
 
-  const [isRunning, setIsRunning] = React.useState<boolean>(Boolean(activeExistingLog));
-  const [activeLogId, setActiveLogId] = React.useState<string | null>(
+  const [isRunning, setIsRunning] = React.useState<boolean>(() =>
+    Boolean(activeExistingLog)
+  );
+  const [activeLogId, setActiveLogId] = React.useState<string | null>(() =>
     activeExistingLog?._id ? String(activeExistingLog._id) : null
   );
-  const [sessionSeconds, setSessionSeconds] = React.useState<number>(0);
-  const [persistedTotalSeconds, setPersistedTotalSeconds] = React.useState<number>(initialTotalTimeSpent);
+  const [activeStartTime, setActiveStartTime] = React.useState<number | null>(() => {
+    if (!activeExistingLog?.startTime) return null;
+    const ms = new Date(activeExistingLog.startTime).getTime();
+    return Number.isFinite(ms) ? ms : null;
+  });
+  const [sessionSeconds, setSessionSeconds] = React.useState<number>(() =>
+    activeExistingLog?.startTime
+      ? getElapsedSecondsFromStart(activeExistingLog.startTime)
+      : 0
+  );
+  const [persistedTotalSeconds, setPersistedTotalSeconds] =
+    React.useState<number>(initialTotalTimeSpent);
   const [timeLogs, setTimeLogs] = React.useState<ITimeLog[]>(initialTimeLogs);
   const [isSaving, setIsSaving] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -54,20 +76,61 @@ export function useTimeLog({
   // Derived total seconds: persistedTotalSeconds + sessionSeconds
   const totalSeconds = persistedTotalSeconds + sessionSeconds;
 
-  // Interval timer tick
+  // Sync latest time logs from the server whenever taskId opens/changes
   React.useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
+    if (!taskId) return;
+    let isCancelled = false;
 
-    if (isRunning) {
-      intervalId = setInterval(() => {
-        setSessionSeconds((prev) => prev + 1);
-      }, 1000);
-    }
+    timelogService
+      .getTimeLogs(taskId)
+      .then((res) => {
+        if (isCancelled || !res.success) return;
+        setTimeLogs(res.timeLogs);
+        setPersistedTotalSeconds(res.totalTimeSpent);
+
+        const runningLog = res.timeLogs.find((log) => log.isRunning);
+        if (runningLog) {
+          const startMs = new Date(runningLog.startTime).getTime();
+          setIsRunning(true);
+          setActiveLogId(runningLog._id ? String(runningLog._id) : null);
+          setActiveStartTime(Number.isFinite(startMs) ? startMs : Date.now());
+          setSessionSeconds(getElapsedSecondsFromStart(runningLog.startTime));
+        } else {
+          setIsRunning(false);
+          setActiveLogId(null);
+          setActiveStartTime(null);
+          setSessionSeconds(0);
+        }
+      })
+      .catch((err) => {
+        if (!isCancelled) {
+          console.warn("Failed to sync timelogs:", err);
+        }
+      });
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      isCancelled = true;
     };
-  }, [isRunning]);
+  }, [taskId]);
+
+  // Interval timer tick computed from activeStartTime so tab throttling cannot drift
+  React.useEffect(() => {
+    if (!isRunning) return;
+
+    const intervalId = setInterval(() => {
+      if (activeStartTime) {
+        setSessionSeconds(
+          Math.max(0, Math.floor((Date.now() - activeStartTime) / 1000))
+        );
+      } else {
+        setSessionSeconds((prev) => prev + 1);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [isRunning, activeStartTime]);
 
   /**
    * Starts a new timer session and saves start time to backend.
@@ -76,35 +139,44 @@ export function useTimeLog({
     if (isRunning) return;
     setError(null);
 
+    if (!taskId || !effectiveUserId) {
+      setError("User session not found. Please log in again to track time.");
+      return;
+    }
+
     const now = new Date();
+    setActiveStartTime(now.getTime());
+    setSessionSeconds(0);
     setIsRunning(true);
 
     try {
-      if (taskId && userId) {
-        const response = await timelogService.startTimeLog({
-          taskId,
-          userId,
-          startTime: now,
-        });
+      const response = await timelogService.startTimeLog({
+        taskId,
+        userId: effectiveUserId,
+        startTime: now,
+      });
 
-        if (response.success && response.data) {
-          if (response.data.timeLog?._id) {
-            setActiveLogId(String(response.data.timeLog._id));
-          }
-          if (Array.isArray(response.data.timeLogs)) {
-            setTimeLogs(response.data.timeLogs);
-          }
-          if (typeof response.data.totalTimeSpent === "number") {
-            setPersistedTotalSeconds(response.data.totalTimeSpent);
-          }
+      if (response.success && response.data) {
+        if (response.data.timeLog?._id) {
+          setActiveLogId(String(response.data.timeLog._id));
         }
+        if (Array.isArray(response.data.timeLogs)) {
+          setTimeLogs(response.data.timeLogs);
+        }
+        if (typeof response.data.totalTimeSpent === "number") {
+          setPersistedTotalSeconds(response.data.totalTimeSpent);
+        }
+        onTimeSaved?.(response.data.totalTimeSpent ?? persistedTotalSeconds);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to record start time.";
-      console.warn("Timer started locally:", msg);
-      // Keep running locally even if network hiccups
+      const msg =
+        err instanceof Error ? err.message : "Failed to start timer session.";
+      setIsRunning(false);
+      setActiveStartTime(null);
+      setSessionSeconds(0);
+      setError(msg);
     }
-  }, [isRunning, taskId, userId]);
+  }, [isRunning, taskId, effectiveUserId, persistedTotalSeconds, onTimeSaved]);
 
   /**
    * Stops the active timer session and saves end time & duration to backend.
@@ -114,7 +186,9 @@ export function useTimeLog({
     setIsSaving(true);
     setError(null);
 
-    const capturedDuration = sessionSeconds;
+    const capturedDuration = activeStartTime
+      ? Math.max(0, Math.floor((Date.now() - activeStartTime) / 1000))
+      : sessionSeconds;
     const now = new Date();
     const currentActiveLogId = activeLogId;
 
@@ -124,7 +198,7 @@ export function useTimeLog({
       if (taskId) {
         const response = await timelogService.stopTimeLog({
           taskId,
-          userId: userId || undefined,
+          userId: effectiveUserId || undefined,
           timeLogId: currentActiveLogId || undefined,
           endTime: now,
           duration: capturedDuration,
@@ -143,15 +217,26 @@ export function useTimeLog({
         }
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to record end time.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to record end time.";
       setError(msg);
       onTimeSaved?.(persistedTotalSeconds + capturedDuration);
     } finally {
       setIsSaving(false);
       setSessionSeconds(0);
+      setActiveStartTime(null);
       setActiveLogId(null);
     }
-  }, [isRunning, sessionSeconds, activeLogId, taskId, userId, persistedTotalSeconds, onTimeSaved]);
+  }, [
+    isRunning,
+    activeStartTime,
+    sessionSeconds,
+    activeLogId,
+    taskId,
+    effectiveUserId,
+    persistedTotalSeconds,
+    onTimeSaved,
+  ]);
 
   /**
    * Refetches time logs and cumulative total duration from the server.

@@ -295,6 +295,23 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
   const [deletingTask, setDeletingTask] = React.useState<TaskItem | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState<boolean>(false);
   const [copiedId, setCopiedId] = React.useState<boolean>(false);
+  const [nowMs, setNowMs] = React.useState<number>(() => Date.now());
+
+  const hasAnyRunningTimer = React.useMemo(
+    () =>
+      tasks.some(
+        (t) => Array.isArray(t.timeLogs) && t.timeLogs.some((l) => l.isRunning)
+      ),
+    [tasks]
+  );
+
+  React.useEffect(() => {
+    if (!hasAnyRunningTimer) return;
+    const intervalId = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [hasAnyRunningTimer]);
 
   const handleOpenViewModal = (task: TaskItem) => {
     setSelectedTask(task);
@@ -865,6 +882,7 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
                   <div className="hidden md:block">
                     <TaskTable
                       tasks={displayedTasks}
+                      nowMs={nowMs}
                       onViewTask={handleOpenViewModal}
                       onEditTask={handleOpenEditModal}
                       onDeleteTask={handleOpenDeleteModal}
@@ -877,6 +895,7 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
                   <div className="block md:hidden">
                     <TaskCardList
                       tasks={displayedTasks}
+                      nowMs={nowMs}
                       onViewTask={handleOpenViewModal}
                       onEditTask={handleOpenEditModal}
                       onDeleteTask={handleOpenDeleteModal}
@@ -983,6 +1002,7 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
 
 interface TaskTableProps {
   tasks: TaskItem[];
+  nowMs: number;
   onViewTask: (task: TaskItem) => void;
   onEditTask: (task: TaskItem) => void;
   onDeleteTask: (task: TaskItem) => void;
@@ -994,8 +1014,24 @@ function isDirectMemberTask(task: TaskItem): boolean {
   return !task.streamId || task.streamType === "direct";
 }
 
+function getRunningTimeLog(task: TaskItem) {
+  if (!Array.isArray(task.timeLogs)) return null;
+  return task.timeLogs.find((log) => log.isRunning) || null;
+}
+
+function getLiveTotalSeconds(task: TaskItem, nowMs: number): number {
+  const base = task.totalTimeSpent || 0;
+  const runningLog = getRunningTimeLog(task);
+  if (!runningLog?.startTime) return base;
+  const startMs = new Date(runningLog.startTime).getTime();
+  if (!Number.isFinite(startMs)) return base;
+  const elapsed = Math.max(0, Math.floor((nowMs - startMs) / 1000));
+  return base + elapsed;
+}
+
 function TaskTable({
   tasks,
+  nowMs,
   onViewTask,
   onEditTask,
   onDeleteTask,
@@ -1025,17 +1061,32 @@ function TaskTable({
           {tasks.map((task) => {
             const taskId = task.id || task._id || "";
             const isDirect = isDirectMemberTask(task);
+            const isTimerActive = Boolean(getRunningTimeLog(task));
+            const liveSeconds = getLiveTotalSeconds(task, nowMs);
 
             return (
               <tr
                 key={taskId}
-                className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                className={`hover:bg-muted/30 transition-colors group cursor-pointer ${
+                  isTimerActive ? "bg-red-500/[0.03]" : ""
+                }`}
                 onClick={() => onViewTask(task)}
               >
                 {/* Task Name & Description */}
                 <td className="py-3 px-4 min-w-[200px] max-w-[320px]">
-                  <div className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                    {task.taskname}
+                  <div className="flex items-center gap-2 min-w-0">
+                    {isTimerActive && (
+                      <span
+                        className="relative flex h-2.5 w-2.5 shrink-0"
+                        title="Timer Active"
+                      >
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                      </span>
+                    )}
+                    <div className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                      {task.taskname}
+                    </div>
                   </div>
                   {task.description && (
                     <div className="text-[11px] text-muted-foreground truncate max-w-[280px]">
@@ -1092,9 +1143,27 @@ function TaskTable({
 
                 {/* Time Logged */}
                 <td className="py-3 px-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock3 className="h-3 w-3 text-primary/70" />
-                    {formatSecondsToHHMMSS(task.totalTimeSpent || 0)}
+                  <span
+                    className={`inline-flex items-center gap-1.5 ${
+                      isTimerActive
+                        ? "text-red-600 dark:text-red-400 font-semibold"
+                        : ""
+                    }`}
+                  >
+                    {isTimerActive ? (
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                      </span>
+                    ) : (
+                      <Clock3 className="h-3 w-3 text-primary/70" />
+                    )}
+                    {formatSecondsToHHMMSS(liveSeconds)}
+                    {isTimerActive && (
+                      <span className="text-[9px] uppercase font-sans font-semibold px-1.5 py-0.2 rounded-full bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
+                        Active
+                      </span>
+                    )}
                   </span>
                 </td>
 
@@ -1154,6 +1223,7 @@ function TaskTable({
 
 function TaskCardList({
   tasks,
+  nowMs,
   onViewTask,
   onEditTask,
   onDeleteTask,
@@ -1165,18 +1235,33 @@ function TaskCardList({
       {tasks.map((task) => {
         const taskId = task.id || task._id || "";
         const isDirect = isDirectMemberTask(task);
+        const isTimerActive = Boolean(getRunningTimeLog(task));
+        const liveSeconds = getLiveTotalSeconds(task, nowMs);
 
         return (
           <div
             key={taskId}
             onClick={() => onViewTask(task)}
-            className="p-3.5 hover:bg-muted/30 active:bg-muted/50 transition-colors cursor-pointer space-y-2 group"
+            className={`p-3.5 hover:bg-muted/30 active:bg-muted/50 transition-colors cursor-pointer space-y-2 group ${
+              isTimerActive ? "bg-red-500/[0.03]" : ""
+            }`}
           >
             {/* Row 1: Task Title & Status Badge */}
             <div className="flex items-start justify-between gap-2.5">
-              <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-                {task.taskname}
-              </h4>
+              <div className="flex items-center gap-2 min-w-0">
+                {isTimerActive && (
+                  <span
+                    className="relative flex h-2.5 w-2.5 shrink-0"
+                    title="Timer Active"
+                  >
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                  </span>
+                )}
+                <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                  {task.taskname}
+                </h4>
+              </div>
               <div className="shrink-0 pt-0.5">
                 {getStatusBadge(task.status)}
               </div>
@@ -1221,12 +1306,28 @@ function TaskCardList({
                   </span>
                 )}
 
-                {(task.totalTimeSpent || 0) > 0 && (
-                  <span className="flex items-center gap-1 font-mono text-[10px]">
-                    <Clock3 className="h-2.5 w-2.5 text-primary/70" />
-                    <span>
-                      {formatSecondsToHHMMSS(task.totalTimeSpent || 0)}
-                    </span>
+                {(liveSeconds > 0 || isTimerActive) && (
+                  <span
+                    className={`flex items-center gap-1 font-mono text-[10px] ${
+                      isTimerActive
+                        ? "text-red-600 dark:text-red-400 font-semibold"
+                        : ""
+                    }`}
+                  >
+                    {isTimerActive ? (
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                      </span>
+                    ) : (
+                      <Clock3 className="h-2.5 w-2.5 text-primary/70" />
+                    )}
+                    <span>{formatSecondsToHHMMSS(liveSeconds)}</span>
+                    {isTimerActive && (
+                      <span className="text-[9px] font-sans uppercase px-1 rounded bg-red-500/10 border border-red-500/30">
+                        Active
+                      </span>
+                    )}
                   </span>
                 )}
               </div>

@@ -990,13 +990,28 @@ export function SpecificStreamView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50 text-foreground">
-                  {filteredTasks.map((task) => (
+                  {filteredTasks.map((task) => {
+                    const isTimerActive =
+                      Array.isArray(task.timeLogs) &&
+                      task.timeLogs.some((log) => log.isRunning);
+                    return (
                     <tr
                       key={task.id}
                       className="hover:bg-muted/30 transition-colors"
                     >
                       <td className="py-3 px-4 font-medium truncate max-w-xs text-foreground">
-                        {task.title}
+                        <div className="flex items-center gap-2">
+                          {isTimerActive && (
+                            <span
+                              className="relative flex h-2.5 w-2.5 shrink-0"
+                              title="Timer Active"
+                            >
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                            </span>
+                          )}
+                          <span className="truncate">{task.title}</span>
+                        </div>
                       </td>
                       <td className="py-3 px-4">{getStatusBadge(task.status)}</td>
                       <td className="py-3 px-4">{getPriorityBadge(task.priority)}</td>
@@ -1046,7 +1061,8 @@ export function SpecificStreamView() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

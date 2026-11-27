@@ -43,8 +43,31 @@ export function ViewTaskModal({
   task,
   onTaskUpdated,
 }: ViewTaskModalProps) {
+  if (!isOpen || !task) return null;
+
+  const taskKey = task.id || task._id || "view-task";
+
+  return (
+    <ViewTaskModalContent
+      key={taskKey}
+      isOpen={isOpen}
+      onClose={onClose}
+      task={task}
+      onTaskUpdated={onTaskUpdated}
+    />
+  );
+}
+
+function ViewTaskModalContent({
+  isOpen,
+  onClose,
+  task,
+  onTaskUpdated,
+}: ViewTaskModalProps) {
   const taskId = task?.id || task?._id || "";
   const initialTotalSeconds = task?.totalTimeSpent || 0;
+  const fallbackUserId =
+    typeof task?.assignedId === "string" ? task.assignedId : undefined;
 
   // Timer & Timelog hook
   const {
@@ -58,6 +81,7 @@ export function ViewTaskModal({
     stopTimer,
   } = useTimeLog({
     taskId,
+    fallbackUserId,
     initialTotalTimeSpent: initialTotalSeconds,
     initialTimeLogs: task?.timeLogs || [],
     onTimeSaved: () => {
@@ -330,8 +354,8 @@ export function ViewTaskModal({
                   <Timer className={`h-5 w-5 ${isRunning ? "animate-spin" : ""}`} />
                   {isRunning && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 ring-2 ring-background"></span>
                     </span>
                   )}
                 </div>
@@ -343,7 +367,11 @@ export function ViewTaskModal({
                       <span>Task Time Tracker</span>
                     </h3>
                     {isRunning && (
-                      <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/30">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
                         Recording Live
                       </span>
                     )}
@@ -400,7 +428,11 @@ export function ViewTaskModal({
                     <span>Current Session</span>
                   </span>
                   {isRunning && (
-                    <span className="text-[10px] text-emerald-600 font-medium">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] text-red-600 dark:text-red-400 font-semibold">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                      </span>
                       Active
                     </span>
                   )}
