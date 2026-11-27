@@ -43,12 +43,24 @@ import {
 import type { TaskItem } from "@/services/task.service";
 import { StreamMembersView } from "@/components/subStream";
 
-export function SpecificStreamView() {
+export interface SpecificStreamViewProps {
+  streamId?: string;
+  organisationId?: string;
+  backHref?: string;
+  backLabel?: string;
+}
+
+export function SpecificStreamView({
+  streamId: propStreamId,
+  organisationId: propOrgId,
+  backHref,
+  backLabel,
+}: SpecificStreamViewProps = {}) {
   const {
     stream,
     isLoading: isLoadingStream,
     error: streamError,
-    currentOrgId,
+    currentOrgId: detailOrgId,
     streamId,
     refetch: refetchStream,
     isAddMemberOpen,
@@ -60,7 +72,14 @@ export function SpecificStreamView() {
     isAddManagerOpen,
     openAddManager,
     closeAddManager,
-  } = useStreamDetail();
+  } = useStreamDetail({
+    streamId: propStreamId,
+    organisationId: propOrgId,
+  });
+
+  const currentOrgId =
+    detailOrgId ||
+    (stream?.organisationId ? String(stream.organisationId) : "");
 
   const {
     tasks,
@@ -504,11 +523,11 @@ export function SpecificStreamView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <nav className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
           <Link
-            href={`/organizations/${currentOrgId}/streams`}
+            href={backHref || `/organizations/${currentOrgId}/streams`}
             className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-muted/60 hover:bg-muted text-foreground transition-all duration-150 cursor-pointer group font-medium"
           >
             <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            <span>Streams Directory</span>
+            <span>{backLabel || "Streams Directory"}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
           {isLoading ? (

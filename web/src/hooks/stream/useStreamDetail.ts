@@ -15,16 +15,26 @@ export interface TaskItem {
   createdAt?: string;
 }
 
-export function useStreamDetail() {
+export interface UseStreamDetailOptions {
+  streamId?: string;
+  organisationId?: string;
+}
+
+export function useStreamDetail(options?: UseStreamDetailOptions) {
   const params = useParams();
   const { organizationId, organizationName } = useUser();
 
   const currentOrgId =
+    options?.organisationId ||
     (params?.orgId as string) ||
     organizationId ||
     "";
 
-  const streamId = (params?.id as string) || "";
+  const streamId =
+    options?.streamId ||
+    (params?.streamId as string) ||
+    (params?.id as string) ||
+    "";
 
   const currentOrgName =
     organizationName ||

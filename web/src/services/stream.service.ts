@@ -83,12 +83,21 @@ export interface StreamItem {
   updatedAt?: string;
 }
 
+export interface StreamEmployeeInfo {
+  id: string;
+  name: string;
+  email?: string;
+  role?: string;
+  status?: string;
+}
+
 export interface GetStreamsResponse {
   success: boolean;
   message?: string;
   count?: number;
   streams: StreamItem[];
   stream?: StreamItem;
+  employee?: StreamEmployeeInfo | null;
 }
 
 export interface UpdateStreamPayload {
@@ -267,6 +276,37 @@ class StreamService {
       }
       throw new Error(
         "An unexpected error occurred while fetching employee tracker streams."
+      );
+    }
+  }
+
+  /**
+   * Fetches streams or projects where manager.id or lead.id matches the given employee ID
+   */
+  async getStreamsByEmpId(
+    empId: string,
+    organisationId?: string,
+    type?: "department" | "project"
+  ): Promise<GetStreamsResponse> {
+    try {
+      const response = await axios.get<GetStreamsResponse>(
+        "/api/stream/getStreamsByEmpId",
+        {
+          params: { empId, orgId: organisationId, type },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage ||
+            error.message ||
+            "Failed to fetch streams for employee."
+        );
+      }
+      throw new Error(
+        "An unexpected error occurred while fetching streams for employee."
       );
     }
   }
