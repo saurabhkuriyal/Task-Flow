@@ -24,6 +24,24 @@ function extractId(val: unknown): string {
   return String(val);
 }
 
+function formatDateForInput(dateVal?: string | null): string {
+  if (!dateVal) return "";
+  const trimmed = String(dateVal).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    return trimmed.slice(0, 10);
+  }
+  try {
+    const d = new Date(trimmed);
+    if (isNaN(d.getTime())) return "";
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  } catch {
+    return "";
+  }
+}
+
 export function useEditTask({
   isOpen,
   onClose,
@@ -37,22 +55,14 @@ export function useEditTask({
   const targetStreamId = streamId || (stream?._id ? String(stream._id) : "") || (stream?.id ? String(stream.id) : "");
   const isEmpTracker = stream?.type === "empTracker";
 
-  // Form State initialized directly from task prop (avoids setState in effect)
+  // Form State initialized directly from task prop (remounted per task open in EditTaskModal)
   const [taskname, setTaskname] = React.useState(task?.taskname || task?.title || "");
   const [description, setDescription] = React.useState(task?.description || "");
   const [priority, setPriority] = React.useState<TaskPriority>(task?.priority || "medium");
   const [impact, setImpact] = React.useState<TaskImpact>(task?.impact || "medium");
   const [status, setStatus] = React.useState<TaskStatus>(task?.status || "todo");
   const [recurring, setRecurring] = React.useState(Boolean(task?.recurring));
-  const [dueDate, setDueDate] = React.useState(() => {
-    if (!task?.dueDate) return "";
-    try {
-      const d = new Date(task.dueDate);
-      return !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : "";
-    } catch {
-      return "";
-    }
-  });
+  const [dueDate, setDueDate] = React.useState(() => formatDateForInput(task?.dueDate));
   const [note, setNote] = React.useState(task?.note || "");
   const [assignedId, setAssignedId] = React.useState(() =>
     task?.assignedId ? extractId(task.assignedId) : ""
@@ -124,8 +134,18 @@ export function useEditTask({
       });
     }
 
+    const currentAssigneeId = task?.assignedId ? extractId(task.assignedId) : "";
+    if (currentAssigneeId && !seen.has(currentAssigneeId)) {
+      seen.add(currentAssigneeId);
+      list.push({
+        memberId: currentAssigneeId,
+        name: task?.assigneeName || "Assigned Member",
+        role: "member",
+      });
+    }
+
     return list;
-  }, [apiMembers, stream]);
+  }, [apiMembers, stream, task]);
 
   // Fetch members when modal is opened
   React.useEffect(() => {
@@ -204,17 +224,30 @@ export function useEditTask({
     setError(null);
     setIsSuccess(false);
 
-    const payload: UpdateTaskPayload = {
-      taskname: taskname.trim(),
-      description: description.trim(),
-      priority,
-      impact,
-      status,
-      recurring,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-      assignedId: assignedId || null,
-      note: note.trim(),
-    };
+    const initialTaskname = (task.taskname || task.title || "").trim();
+    const initialDescription = (task.description || "").trim();
+    const initialPriority = task.priority || "medium";
+    const initialImpact = task.impact || "medium";
+    const initialStatus = task.status || "todo";
+    const initialRecurring = Boolean(task.recurring);
+    const initialDueDate = formatDateForInput(task.dueDate);
+    const initialAssignedId = task.assignedId ? extractId(task.assignedId) : "";
+    const initialNote = (task.note || "").trim();
+
+    const payload: UpdateTaskPayload = {};
+    if (taskname.trim() !== initialTaskname) payload.taskname = taskname.trim();
+    if (description.trim() !== initialDescription) payload.description = description.trim();
+    if (priority !== initialPriority) payload.priority = priority;
+    if (impact !== initialImpact) payload.impact = impact;
+    if (status !== initialStatus) payload.status = status;
+    if (recurring !== initialRecurring) payload.recurring = recurring;
+    if (dueDate !== initialDueDate) {
+      payload.dueDate = dueDate ? new Date(dueDate).toISOString() : null;
+    }
+    if (assignedId !== initialAssignedId) {
+      payload.assignedId = assignedId || null;
+    }
+    if (note.trim() !== initialNote) payload.note = note.trim();
 
     try {
       const response = await taskService.updateTask(taskId, payload);

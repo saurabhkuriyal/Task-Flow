@@ -26,6 +26,8 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +35,11 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEmployeeTaskPanel } from "@/hooks/member/useEmployeeTaskPanel";
 import { formatSecondsToHHMMSS } from "@/hooks/task/useTimeLog";
-import { ViewTaskModal } from "@/components/organization-workspace/task/ViewTaskModal";
+import {
+  ViewTaskModal,
+  EditTaskModal,
+  DeleteTaskModal,
+} from "@/components/organization-workspace/task";
 import { CreateEmployeeTaskModal } from "./CreateEmployeeTaskModal";
 import type { TaskItem } from "@/services/task.service";
 import type { TaskStatus, TaskPriority } from "@/models/tasks.model";
@@ -282,9 +288,11 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
   // Side panel navigation selection: "all" (default) | "direct" | [streamId]
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
 
-  // Selected task for ViewTaskModal
+  // Selected task for ViewTaskModal, EditTaskModal, and DeleteTaskModal
   const [selectedTask, setSelectedTask] = React.useState<TaskItem | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = React.useState<boolean>(false);
+  const [editingTask, setEditingTask] = React.useState<TaskItem | null>(null);
+  const [deletingTask, setDeletingTask] = React.useState<TaskItem | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState<boolean>(false);
   const [copiedId, setCopiedId] = React.useState<boolean>(false);
 
@@ -296,6 +304,22 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
     setSelectedTask(null);
+  };
+
+  const handleOpenEditModal = (task: TaskItem) => {
+    setEditingTask(task);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingTask(null);
+  };
+
+  const handleOpenDeleteModal = (task: TaskItem) => {
+    setDeletingTask(task);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeletingTask(null);
   };
 
   const handleCopyUserId = async () => {
@@ -842,6 +866,8 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
                     <TaskTable
                       tasks={displayedTasks}
                       onViewTask={handleOpenViewModal}
+                      onEditTask={handleOpenEditModal}
+                      onDeleteTask={handleOpenDeleteModal}
                       showStreamColumn={selectedCategory === "all"}
                       showAssignerColumn={true}
                     />
@@ -852,6 +878,8 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
                     <TaskCardList
                       tasks={displayedTasks}
                       onViewTask={handleOpenViewModal}
+                      onEditTask={handleOpenEditModal}
+                      onDeleteTask={handleOpenDeleteModal}
                       showStreamColumn={selectedCategory === "all"}
                       showAssignerColumn={true}
                     />
@@ -907,6 +935,27 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
         />
       )}
 
+      {/* Edit Task Modal (for direct member tasks) */}
+      <EditTaskModal
+        isOpen={Boolean(editingTask)}
+        onClose={handleCloseEditModal}
+        onSuccess={() => {
+          refetch();
+        }}
+        task={editingTask}
+        organisationId={orgId}
+      />
+
+      {/* Delete Task Modal (for direct member tasks) */}
+      <DeleteTaskModal
+        isOpen={Boolean(deletingTask)}
+        onClose={handleCloseDeleteModal}
+        onSuccess={() => {
+          refetch();
+        }}
+        task={deletingTask}
+      />
+
       {/* Create Task Modal specifically for this Member */}
       <CreateEmployeeTaskModal
         isOpen={isCreateModalOpen}
@@ -935,13 +984,21 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
 interface TaskTableProps {
   tasks: TaskItem[];
   onViewTask: (task: TaskItem) => void;
+  onEditTask: (task: TaskItem) => void;
+  onDeleteTask: (task: TaskItem) => void;
   showStreamColumn?: boolean;
   showAssignerColumn?: boolean;
+}
+
+function isDirectMemberTask(task: TaskItem): boolean {
+  return !task.streamId || task.streamType === "direct";
 }
 
 function TaskTable({
   tasks,
   onViewTask,
+  onEditTask,
+  onDeleteTask,
   showStreamColumn = true,
   showAssignerColumn = true,
 }: TaskTableProps) {
@@ -967,6 +1024,7 @@ function TaskTable({
         <tbody className="divide-y divide-border/40">
           {tasks.map((task) => {
             const taskId = task.id || task._id || "";
+            const isDirect = isDirectMemberTask(task);
 
             return (
               <tr
@@ -1040,22 +1098,50 @@ function TaskTable({
                   </span>
                 </td>
 
-                {/* Action Button */}
+                {/* Action Buttons */}
                 <td
                   className="py-3 px-4 text-right shrink-0"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onViewTask(task)}
-                    className="h-7 px-2 text-xs cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/40"
-                    title="View task details and track time"
-                  >
-                    <Eye className="h-3.5 w-3.5 mr-1" />
-                    View
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onViewTask(task)}
+                      className="h-7 px-2 text-xs cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                      title="View task details and track time"
+                    >
+                      <Eye className="h-3.5 w-3.5 mr-1" />
+                      View
+                    </Button>
+
+                    {isDirect && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEditTask(task)}
+                          title="Edit Direct Task"
+                          className="h-7 w-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded-md cursor-pointer transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDeleteTask(task)}
+                          title="Delete Direct Task"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
@@ -1069,6 +1155,8 @@ function TaskTable({
 function TaskCardList({
   tasks,
   onViewTask,
+  onEditTask,
+  onDeleteTask,
   showStreamColumn = true,
   showAssignerColumn = true,
 }: TaskTableProps) {
@@ -1076,6 +1164,7 @@ function TaskCardList({
     <div className="divide-y divide-border/40">
       {tasks.map((task) => {
         const taskId = task.id || task._id || "";
+        const isDirect = isDirectMemberTask(task);
 
         return (
           <div
@@ -1142,9 +1231,42 @@ function TaskCardList({
                 )}
               </div>
 
-              <span className="text-[11px] font-medium text-primary flex items-center gap-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">
-                View <ChevronRight className="h-3 w-3" />
-              </span>
+              <div
+                className="flex items-center gap-1 shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {isDirect && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEditTask(task)}
+                      title="Edit Direct Task"
+                      className="h-7 w-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded-md cursor-pointer transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteTask(task)}
+                      title="Delete Direct Task"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onViewTask(task)}
+                  className="text-[11px] font-medium text-primary flex items-center gap-0.5 pl-1 shrink-0 group-hover:translate-x-0.5 transition-transform cursor-pointer"
+                >
+                  View <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           </div>
         );

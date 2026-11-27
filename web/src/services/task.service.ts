@@ -173,14 +173,14 @@ class TaskService {
   }
 
   /**
-   * Updates an existing task by ID.
+   * Partially updates an existing task by ID using PATCH.
    */
   async updateTask(
     taskId: string,
     payload: UpdateTaskPayload
   ): Promise<TaskResponse> {
     try {
-      const response = await axios.put<TaskResponse>(
+      const response = await axios.patch<TaskResponse>(
         "/api/tasks/updateTask",
         { taskId, ...payload },
         {

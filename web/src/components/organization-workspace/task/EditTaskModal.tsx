@@ -38,6 +38,33 @@ export function EditTaskModal({
   streamId,
   organisationId,
 }: EditTaskModalProps) {
+  if (!isOpen || !task) return null;
+
+  const taskKey = task.id || task._id || "edit-task";
+
+  return (
+    <EditTaskModalContent
+      key={taskKey}
+      isOpen={isOpen}
+      onClose={onClose}
+      onSuccess={onSuccess}
+      task={task}
+      stream={stream}
+      streamId={streamId}
+      organisationId={organisationId}
+    />
+  );
+}
+
+function EditTaskModalContent({
+  isOpen,
+  onClose,
+  onSuccess,
+  task,
+  stream,
+  streamId,
+  organisationId,
+}: EditTaskModalProps) {
   const {
     taskname,
     setTaskname,

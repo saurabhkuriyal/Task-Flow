@@ -4,20 +4,21 @@ import dbConnect from "@/utils/db";
 import { TaskModel } from "@/models/tasks.model";
 import { autoCreateRecurringTask } from "@/utils/recurringTask";
 
-export async function PUT(req: Request) {
+export async function PATCH(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { taskId, ...updates } = body;
+    const { taskId, id, ...updates } = body;
+    const targetTaskId = taskId || id;
 
-    if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
+    if (!targetTaskId || !mongoose.Types.ObjectId.isValid(targetTaskId)) {
       return NextResponse.json(
         { success: false, message: "Valid Task ID is required." },
         { status: 400 }
       );
     }
 
-    const task = await TaskModel.findById(taskId);
+    const task = await TaskModel.findById(targetTaskId);
     if (!task) {
       return NextResponse.json(
         { success: false, message: "Task not found." },
@@ -28,7 +29,16 @@ export async function PUT(req: Request) {
     const isTransitioningToCompleted =
       updates.status === "completed" && task.status !== "completed";
 
-    if (updates.taskname !== undefined) task.taskname = String(updates.taskname).trim();
+    if (updates.taskname !== undefined) {
+      const trimmedName = String(updates.taskname).trim();
+      if (!trimmedName) {
+        return NextResponse.json(
+          { success: false, message: "Task name cannot be empty." },
+          { status: 400 }
+        );
+      }
+      task.taskname = trimmedName;
+    }
     if (updates.description !== undefined) task.description = String(updates.description).trim();
     if (updates.status !== undefined) task.status = updates.status;
     if (updates.priority !== undefined) task.priority = updates.priority;
@@ -44,6 +54,13 @@ export async function PUT(req: Request) {
       task.assignedId =
         updates.assignedId && mongoose.Types.ObjectId.isValid(updates.assignedId)
           ? new mongoose.Types.ObjectId(updates.assignedId)
+          : null;
+    }
+
+    if (updates.streamId !== undefined) {
+      task.streamId =
+        updates.streamId && mongoose.Types.ObjectId.isValid(updates.streamId)
+          ? new mongoose.Types.ObjectId(updates.streamId)
           : null;
     }
 
