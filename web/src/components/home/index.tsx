@@ -1,7 +1,25 @@
 import React from "react";
 import { HeroSection } from "./hero";
+import { OrganizationHomeView } from "./OrganizationHomeView";
+import { OrganizationInfoBanner } from "./OrganizationInfoBanner";
+import {
+  OrgTaskStatusChart,
+  OrgPriorityChart,
+  OrgStreamWorkloadChart,
+  OrgTeamStructureChart,
+  OrgWeeklyTrendChart,
+} from "./OrganizationCharts";
 
-export { HeroSection };
+export {
+  HeroSection,
+  OrganizationHomeView,
+  OrganizationInfoBanner,
+  OrgTaskStatusChart,
+  OrgPriorityChart,
+  OrgStreamWorkloadChart,
+  OrgTeamStructureChart,
+  OrgWeeklyTrendChart,
+};
 
 export function HomeView() {
   return (

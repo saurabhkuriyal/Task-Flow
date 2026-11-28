@@ -98,6 +98,11 @@ export interface GetTasksResponse {
   tasks: TaskItem[];
 }
 
+export interface GetTasksByOrgResponse extends GetTasksResponse {
+  directTasksCount: number;
+  streamTasksCount: number;
+}
+
 export interface CategorizedStreamGroup {
   streamId: string;
   streamName: string;
@@ -336,6 +341,39 @@ class TaskService {
         );
       }
       throw new Error("An unexpected error occurred while fetching time logs.");
+    }
+  }
+
+  /**
+   * Fetches all tasks for an organization (including stream tasks and direct member tasks).
+   */
+  async getTasksByOrg(
+    orgId: string,
+    filters?: { status?: string; priority?: string; directOnly?: boolean }
+  ): Promise<GetTasksByOrgResponse> {
+    try {
+      const response = await axios.get<GetTasksByOrgResponse>(
+        "/api/tasks/getTasksByOrg",
+        {
+          params: {
+            orgId,
+            status: filters?.status,
+            priority: filters?.priority,
+            directOnly: filters?.directOnly,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const serverMessage = error.response?.data?.message;
+        throw new Error(
+          serverMessage || error.message || "Failed to fetch organization tasks."
+        );
+      }
+      throw new Error(
+        "An unexpected error occurred while fetching organization tasks."
+      );
     }
   }
 
