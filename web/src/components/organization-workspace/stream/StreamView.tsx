@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { AlertCircle } from "lucide-react";
-import { StreamToolbar } from "./StreamToolbar";
+import { StreamToolbar, type StreamDirectoryTab } from "./StreamToolbar";
 import { StreamSections } from "./StreamSections";
 import { AddDepartmentModal } from "./AddDepartmentModal";
 import { AddProjectModal } from "./AddProjectModal";
@@ -28,17 +28,27 @@ export function StreamView() {
     closeAddProject,
   } = useStreams();
 
+  const [activeTab, setActiveTab] = React.useState<StreamDirectoryTab>("all");
+
   return (
-    <div className="py-6 px-4 sm:px-8 max-w-6xl mx-auto space-y-6">
+    <div className="py-6 px-4 sm:px-8 max-w-7xl mx-auto space-y-6 pb-16">
       <StreamToolbar
+        orgName={currentOrgName}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        departmentsCount={departments.length}
+        projectsCount={projects.length}
+        membersCount={filteredMembers.length}
+        isLoading={isLoading}
+        onRefresh={refetch}
         onAddDepartment={openAddDepartment}
         onAddProject={openAddProject}
       />
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -50,6 +60,7 @@ export function StreamView() {
         projects={projects}
         members={filteredMembers}
         searchTerm={searchTerm}
+        activeTab={activeTab}
         orgId={currentOrgId}
         onAddDepartment={openAddDepartment}
         onAddProject={openAddProject}
