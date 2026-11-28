@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrganizationHome } from "@/hooks/organizations/useOrganizationHome";
 import { OrganizationInfoBanner } from "./OrganizationInfoBanner";
+import { OrganizationEmployeeActivity } from "./OrganizationEmployeeActivity";
 import {
   OrgTaskStatusChart,
   OrgPriorityChart,
@@ -54,6 +55,7 @@ export function OrganizationHomeView({
     employees,
     managers,
     leads,
+    tasks,
     taskStats,
     teamStats,
     streamWorkload,
@@ -79,6 +81,14 @@ export function OrganizationHomeView({
         projectsCount={projects.length}
         isLoading={isLoading}
         onRefresh={refetch}
+      />
+
+      {/* 1.5. Employee Workload & Today's Time Logged Panel */}
+      <OrganizationEmployeeActivity
+        orgId={orgId}
+        members={members}
+        tasks={tasks}
+        isLoading={combinedLoading}
       />
 
       {/* Error Alert */}

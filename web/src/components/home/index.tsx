@@ -2,6 +2,7 @@ import React from "react";
 import { HeroSection } from "./hero";
 import { OrganizationHomeView } from "./OrganizationHomeView";
 import { OrganizationInfoBanner } from "./OrganizationInfoBanner";
+import { OrganizationEmployeeActivity } from "./OrganizationEmployeeActivity";
 import {
   OrgTaskStatusChart,
   OrgPriorityChart,
@@ -14,6 +15,7 @@ export {
   HeroSection,
   OrganizationHomeView,
   OrganizationInfoBanner,
+  OrganizationEmployeeActivity,
   OrgTaskStatusChart,
   OrgPriorityChart,
   OrgStreamWorkloadChart,

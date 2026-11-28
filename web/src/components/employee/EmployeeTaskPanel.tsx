@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEmployeeTaskPanel } from "@/hooks/member/useEmployeeTaskPanel";
 import { formatSecondsToHHMMSS } from "@/hooks/task/useTimeLog";
+import { useTodayTimeLogged } from "@/hooks/task/useTodayTimeLogged";
 import {
   ViewTaskModal,
   EditTaskModal,
@@ -272,7 +273,6 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
     filteredTasks,
     employee,
     categorizedByStream,
-    metrics,
     isLoading,
     isRefreshing,
     error,
@@ -312,6 +312,13 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
     }, 1000);
     return () => clearInterval(intervalId);
   }, [hasAnyRunningTimer]);
+
+  const {
+    formattedTodayTime,
+    formattedLiveTotalTime,
+    todaySessionsCount,
+    hasActiveTimer,
+  } = useTodayTimeLogged(tasks, nowMs);
 
   const handleOpenViewModal = (task: TaskItem) => {
     setSelectedTask(task);
@@ -532,14 +539,48 @@ export function EmployeeTaskPanel({ userId, orgId }: EmployeeTaskPanelProps) {
                 </div>
               </div>
 
-              {/* Total Time Logged Pill */}
-              <div className="flex items-center gap-2 bg-muted/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-border/60 self-start sm:self-auto shrink-0">
-                <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                <div className="text-[11px] sm:text-xs">
-                  <span className="text-muted-foreground mr-1">Time Logged:</span>
-                  <span className="font-mono font-bold text-foreground">
-                    {formatSecondsToHHMMSS(metrics.totalTimeSpent)}
-                  </span>
+              {/* Today & Total Time Logged Pills */}
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
+                <div
+                  className={`flex items-center gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border transition-colors ${
+                    hasActiveTimer
+                      ? "border-red-500/30 bg-red-500/5"
+                      : "border-primary/25 bg-primary/5"
+                  }`}
+                  title={`${todaySessionsCount} session${
+                    todaySessionsCount === 1 ? "" : "s"
+                  } logged today`}
+                >
+                  {hasActiveTimer ? (
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                    </span>
+                  ) : (
+                    <Clock3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                  )}
+                  <div className="text-[11px] sm:text-xs">
+                    <span className="text-muted-foreground mr-1">Today:</span>
+                    <span
+                      className={`font-mono font-bold ${
+                        hasActiveTimer
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {formattedTodayTime}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-muted/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-border/60">
+                  <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                  <div className="text-[11px] sm:text-xs">
+                    <span className="text-muted-foreground mr-1">Total:</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {formattedLiveTotalTime}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

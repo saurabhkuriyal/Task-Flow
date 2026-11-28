@@ -3,16 +3,20 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCheck, Building2, LogOut, User as UserIcon } from "lucide-react";
+import { CheckCheck, Building2, LogOut, User as UserIcon, Menu } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 interface WorkspaceNavbarProps {
   organizationName: string;
+  onOpenMobileMenu?: () => void;
 }
 
-export function WorkspaceNavbar({ organizationName }: WorkspaceNavbarProps) {
+export function WorkspaceNavbar({
+  organizationName,
+  onOpenMobileMenu,
+}: WorkspaceNavbarProps) {
   const router = useRouter();
   const { userName, clearUser } = useUser();
 
@@ -31,22 +35,33 @@ export function WorkspaceNavbar({ organizationName }: WorkspaceNavbarProps) {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/90 backdrop-blur-md select-none">
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Left: Product Name & Logo */}
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex h-14 sm:h-16 w-full max-w-7xl items-center justify-between gap-2 px-3 sm:px-6 lg:px-8">
+        {/* Left: Mobile Drawer Trigger + Product Name & Logo */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {onOpenMobileMenu && (
+            <button
+              type="button"
+              onClick={onOpenMobileMenu}
+              className="md:hidden flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-border/70 bg-muted/40 text-foreground hover:bg-muted transition-colors cursor-pointer"
+              aria-label="Open workspace menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+          )}
+
           <Link
             href="/workspaces"
             aria-label="TaskFlow Workspaces"
-            className="group flex items-center gap-2.5 transition-opacity hover:opacity-90"
+            className="group flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background shadow-xs transition-transform duration-200 group-hover:scale-105">
               <CheckCheck className="h-4 w-4 stroke-[2.5]" />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="hidden sm:flex items-center gap-1.5">
               <span className="text-base font-bold tracking-tight text-foreground">
                 TaskFlow
               </span>
-              <span className="hidden sm:inline-block rounded-md border border-border/80 bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="hidden md:inline-block rounded-md border border-border/80 bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 Workspace
               </span>
             </div>
