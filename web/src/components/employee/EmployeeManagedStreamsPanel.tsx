@@ -160,12 +160,12 @@ export function EmployeeManagedStreamsPanel({
             <Link href={taskPanelHref}>
               <Button
                 type="button"
-                variant="secondary"
+                variant="default"
                 size="sm"
-                className="h-8 px-3 text-xs cursor-pointer gap-1.5"
+                className="h-8 px-3 text-xs cursor-pointer gap-1.5 shadow-xs font-medium"
               >
                 <ListTodo className="h-3.5 w-3.5" />
-                <span>Task Panel</span>
+                <span>Your Tasks</span>
               </Button>
             </Link>
           </div>
